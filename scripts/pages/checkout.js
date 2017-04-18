@@ -1,6 +1,14 @@
-require(["modules/jquery-mozu", "underscore", "hyprlive", "modules/backbone-mozu", "modules/models-checkout", "modules/views-messages", "modules/cart-monitor", 'hyprlivecontext', 'modules/editable-view', 'modules/preserve-element-through-render'], function ($, _, Hypr, Backbone, CheckoutModels, messageViewFactory, CartMonitor, HyprLiveContext, EditableView, preserveElements) {
-
-
+require(["modules/jquery-mozu", 
+    "underscore", 
+    "hyprlive", 
+    "modules/backbone-mozu", 
+    "modules/models-checkout", 
+    "modules/views-messages", 
+    "modules/cart-monitor", 
+    'hyprlivecontext', 
+    'modules/editable-view', 
+    'modules/preserve-element-through-render'], 
+function ($, _, Hypr, Backbone, CheckoutModels, messageViewFactory, CartMonitor, HyprLiveContext, EditableView, preserveElements) {
     var CheckoutStepView = EditableView.extend({
         edit: function () {
             this.model.edit();
@@ -88,8 +96,15 @@ require(["modules/jquery-mozu", "underscore", "hyprlive", "modules/backbone-mozu
             'address.countryCode',
             'contactId'
         ],
-        beginAddContact: function () {
-            this.model.set('contactId', 'new');
+        additionalEvents: {
+            "change [data-mz-contact-selector]": "updateContact"
+        },
+        // beginAddContact: function () {
+        //     //this.model.set('contactId', 'new');
+        //     this.model.newContact();
+        // },
+        updateContact: function(e){
+            this.model.updateContact(this.$('[data-mz-contact-selector]:checked').val());
         }
     });
 

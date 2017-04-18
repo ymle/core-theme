@@ -3,7 +3,7 @@
     {% for contact in model.contacts %}
     <label class="mz-contactselector-contact">
         <span class="mz-contactselector-inputwrapper">
-            <input type="radio" data-mz-value="{{ contactcontext }}contactId" name="contactId" value="{{ contact.id }}" {% if model.contactId == contact.id %} checked="checked" {% endif %}>
+            <input type="radio" data-mz-contact-selector data-mz-value="{{ contactcontext }}contactId" name="contactId" value="{{ contact.id }}" {% if model.contactId == contact.id %} checked="checked" {% endif %}>
         </span>
         <span class="mz-contactselector-summarywrapper">
             <div class="mz-addresssummary">
