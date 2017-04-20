@@ -401,6 +401,9 @@ define(['modules/backbone-mozu', "modules/api", 'hyprlive', 'hyprlivecontext', '
         initialize: function() {
             var self = this;
             this.listenTo(this.model, "change:pageSize", _.bind(this.model.changePageSize, this.model));
+            this.listenTo(this.model, 'returnRender', function() {
+                self.render();
+            });
             this.listenTo(this.model, 'returndisplayed', function(id) {
                 var $retView = self.$('[data-mz-id="' + id + '"]');
                 if ($retView.length === 0) $retView = self.$el;

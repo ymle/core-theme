@@ -318,12 +318,17 @@
                 pageSize: 5
             };
             returnHistory.lastRequest = {
-                pageSize: 5
+                pageSize: 5,
+                sortBy: 'createDate desc'
             };
             orderHistory.on('returncreated', function(id) {
                 returnHistory.apiGet(returnHistory.lastRequest).then(function () {
                     returnHistory.trigger('returndisplayed', id);
                 });
+            });
+
+            returnHistory.apiGet(returnHistory.lastRequest).then(function () {
+                returnHistory.trigger('returnRender');
             });
 
             _.defer(function (cust) {
