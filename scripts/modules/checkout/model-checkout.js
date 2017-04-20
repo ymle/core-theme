@@ -20,7 +20,7 @@ define([
             getOrder: function () {
                 return this.parent;
             }
-        })
+        });
 
         return CheckoutModel;
     }

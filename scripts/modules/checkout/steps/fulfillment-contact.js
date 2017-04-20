@@ -5,12 +5,12 @@ define([
     'modules/backbone-mozu',
     'modules/api',
     'modules/models-customer',
-    'hyprlivecontext'
-    'modules/checkout/model-checkout-step'
+    'hyprlivecontext',
+    'modules/checkout/model-checkout-step',
 ],
 function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutStep) {
 
-    var FulfillmentContact = CheckoutStep.extend({
+    var FulfillmentContact = CheckoutStep.extend({ 
             relations: CustomerModels.Contact.prototype.relations,
             validation: CustomerModels.Contact.prototype.validation,
             digitalOnlyValidation: {
@@ -25,6 +25,9 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
                 }
             },
             helpers: ['contacts'],
+            getOrder: function() {
+                return this.parent.parent;
+            },
             contacts: function () {
                 var contacts = this.getOrder().get('customer').get('contacts').toJSON();
                 return contacts && contacts.length > 0 && contacts;
@@ -56,6 +59,7 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
 
                     return false;
                 }
+                return true;
             },
             newContact: function(){
                 var self = this;
@@ -73,7 +77,7 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
                     self.newContact();
                     return;
                 } 
-
+                self.get('address').clear();
                 self.set(self.getOrder().get('customer').get('contacts').get(contactId).toJSON(), {silent: true});    
             },
             calculateStepStatus: function () {
@@ -117,8 +121,8 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
                 var order = this.getOrder(),
                     self = this;
 
-                if (self.validate()) return false;
-                self.getOrder().apiModel.update({ fulfillmentInfo: me.toJSON() }).ensure(function () {
+                if (self.validate()) { return false; }
+                self.getOrder().apiModel.update({ fulfillmentInfo: self.toJSON() }).ensure(function () {
                     self.isLoading(false);
                     order.messages.reset();
                     order.syncApiModel();
@@ -128,7 +132,10 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
                 });
             },
             validateAddresses : function(){
-                var deferredValidate = api.defer(),
+                var self = this,
+                    order = this.getOrder(),
+                    addr = this.get('address'),
+                    deferredValidate = api.defer(),
                     isAddressValidationEnabled = HyprLiveContext.locals.siteContext.generalSettings.isAddressValidationEnabled,
                     allowInvalidAddresses = HyprLiveContext.locals.siteContext.generalSettings.allowInvalidAddresses;
                 
@@ -138,7 +145,7 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
                     // Redundent
                     //parent.isLoading(false);
                     self.stepStatus('invalid');
-                }
+                };
 
                 if (!isAddressValidationEnabled) {
                     deferredValidate.resolve();
@@ -172,7 +179,7 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
                     }
                 }
                 return deferredValidate.promise;
-            }
+            },
             // Breakup for validation
             // Break for compelete step
             next: function () {
@@ -191,37 +198,39 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
 
                 //     return false;
                 // }
-               if(!validateModel()) return false;
+               if(!self.validateModel()) return false;
 
                var parent = self.parent,
                     order = self.getOrder(),
-                    addr = this.get('address');
+                    fulfillmentInfo = self.parent;
 
-                this.isLoading(true);
+                this.isLoading(false);
 
                 var completeStep = function () {
                     order.messages.reset();
                     order.syncApiModel();
-                    self.isLoading(true);
+                    fulfillmentInfo.getShippingMethodsFromContact();
+                    self.calculateStepStatus();
                     //
                     // Remove getShippingMethodsFromContact, move to shipping Fulfillment as call to refresh
-                    // 
+                    // Saves Fulfillment Info and Returns Shipping Methods 
                     //
-                    order.apiModel.getShippingMethodsFromContact().then(function (methods) {
-                        return parent.refreshShippingMethods(methods);
-                    }).ensure(function () {
-                        addr.set('candidateValidatedAddresses', null);
-                        self.isLoading(false);
-                        //Redundent
-                        //parent.isLoading(false);
-                        self.calculateStepStatus();
-                        //Redundent
-                        //parent.calculateStepStatus();
-                    });                  
-                }
-                validateAddresses.then(function(){
+                    // order.apiModel.getShippingMethodsFromContact().then(function (methods) {
+                    //     return parent.refreshShippingMethods(methods);
+                    // }).ensure(function () {
+                    //     addr.set('candidateValidatedAddresses', null);
+                    //     self.isLoading(false);
+                    //     //Redundent
+                    //     //parent.isLoading(false);
+                    //     self.calculateStepStatus();
+                    //     //Redundent
+                    //     //parent.calculateStepStatus();
+                    // });                  
+                };
+                self.validateAddresses().then(function(){
                     completeStep();
-                })
+                });
             }
-        })
-})
+        });
+    return FulfillmentContact;
+});

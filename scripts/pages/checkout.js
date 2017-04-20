@@ -33,6 +33,7 @@ function ($, _, Hypr, Backbone, CheckoutModels, messageViewFactory, CartMonitor,
                 me.$('.mz-panel-wrap').css({ 'overflow-y': 'hidden'});
             }, 250);
             me.listenTo(me.model,'stepstatuschange', me.render, me);
+            //me.listenTo(me.model,'refreshView', me.render, me);
             me.$el.on('keypress', 'input', function (e) {
                 if (e.which === 13) {
                     me.handleEnterKey(e);
@@ -104,7 +105,7 @@ function ($, _, Hypr, Backbone, CheckoutModels, messageViewFactory, CartMonitor,
         //     this.model.newContact();
         // },
         updateContact: function(e){
-            this.model.updateContact(this.$('[data-mz-contact-selector]:checked').val());
+            this.model.updateContact(this.$('[data-mz-contact-selector]').val());
         }
     });
 

@@ -5,11 +5,10 @@ define([
     'modules/backbone-mozu',
     'modules/api',
     'hyprlivecontext',
-    'modules/checkout/model-checkout'
 ],
-function ($, _, Hypr, Backbone, api, HyprLiveContext, Checkout) {
+function ($, _, Hypr, Backbone, api, HyprLiveContext) {
 
-    var CheckoutStep = Checkout.extend({
+    var CheckoutStep = Backbone.MozuModel.extend({
         helpers: ['stepStatus', 'requiresFulfillmentInfo', 'requiresDigitalFulfillmentContact'],  //
         // instead of overriding constructor, we are creating
         // a method that only the CheckoutStepView knows to
@@ -54,10 +53,11 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, Checkout) {
             return this._stepStatus;
         },
         requiresFulfillmentInfo: function () {
-            return this.getOrder().get('requiresFulfillmentInfo');
+            return true;
         },
         requiresDigitalFulfillmentContact: function () {
-            return this.getOrder().get('requiresDigitalFulfillmentContact');
+            //return this.getOrder().get('requiresDigitalFulfillmentContact');
+            return true;
         },
         edit: function () {
             this.stepStatus('incomplete');
@@ -65,7 +65,6 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, Checkout) {
         next: function () {
             if (this.submit()) this.isLoading(true);
         }
-    })
-
+    });
     return CheckoutStep;
 });
