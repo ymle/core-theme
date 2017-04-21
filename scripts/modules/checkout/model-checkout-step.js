@@ -53,11 +53,10 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext) {
             return this._stepStatus;
         },
         requiresFulfillmentInfo: function () {
-            return true;
+            return this.getOrder().get('requiresFulfillmentInfo');
         },
         requiresDigitalFulfillmentContact: function () {
-            //return this.getOrder().get('requiresDigitalFulfillmentContact');
-            return true;
+            return this.getOrder().get('requiresDigitalFulfillmentContact');
         },
         edit: function () {
             this.stepStatus('incomplete');

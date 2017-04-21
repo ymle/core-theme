@@ -1,23 +1,23 @@
 define([
-    'modules/jquery-mozu',
-    'underscore',
-    'hyprlive',
-    'modules/backbone-mozu',
-    'modules/api',
-    'modules/models-customer',
-    'hyprlivecontext',
-    'modules/checkout/model-checkout-step',
-],
-function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutStep) {
+        'modules/jquery-mozu',
+        'underscore',
+        'hyprlive',
+        'modules/backbone-mozu',
+        'modules/api',
+        'modules/models-customer',
+        'hyprlivecontext',
+        'modules/checkout/model-checkout-step',
+    ],
+    function($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutStep) {
 
-    var FulfillmentContact = CheckoutStep.extend({ 
+        var FulfillmentContact = CheckoutStep.extend({
             relations: CustomerModels.Contact.prototype.relations,
             validation: CustomerModels.Contact.prototype.validation,
             digitalOnlyValidation: {
                 'email': {
                     pattern: 'email',
                     msg: Hypr.getLabel('emailMissing')
-                } 
+                }
             },
             dataTypes: {
                 contactId: function(val) {
@@ -25,14 +25,19 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
                 }
             },
             helpers: ['contacts'],
+            /**
+             * [getOrder] Gets the Parent Checkout Model. Fulfillment Contact is child of Fulfillment Info and must go 1 more level up.
+             * @return {CheckoutStep} 
+             * 
+             */
             getOrder: function() {
                 return this.parent.parent;
             },
-            contacts: function () {
+            contacts: function() {
                 var contacts = this.getOrder().get('customer').get('contacts').toJSON();
                 return contacts && contacts.length > 0 && contacts;
             },
-            initialize: function () {
+            initialize: function() {
                 var self = this;
                 //
                 // Remove Event Listener for Change Contact Id, Add call to change
@@ -49,19 +54,21 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
                 //     }
                 // });
             },
-            validateModel: function(){
+            validateModel: function() {
                 var validationObj = this.validate();
 
-                if (validationObj) { 
-                    Object.keys(validationObj).forEach(function(key){
-                        this.trigger('error', {message: validationObj[key]});
+                if (validationObj) {
+                    Object.keys(validationObj).forEach(function(key) {
+                        this.trigger('error', {
+                            message: validationObj[key]
+                        });
                     }, this);
 
                     return false;
                 }
                 return true;
             },
-            newContact: function(){
+            setNewContact: function() {
                 var self = this;
                 self.set('contactId', 'new');
                 self.get('address').clear();
@@ -70,17 +77,19 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
                 self.unset('firstName');
                 self.unset('lastNameOrSurname');
             },
-            updateContact: function(contactId){
+            updateContact: function(contactId) {
                 var self = this;
                 self.set('contactId', contactId);
-                if(!contactId || contactId === 'new') {
-                    self.newContact();
+                if (!contactId || contactId === 'new') {
+                    self.setNewContact();
                     return;
-                } 
+                }
                 self.get('address').clear();
-                self.set(self.getOrder().get('customer').get('contacts').get(contactId).toJSON(), {silent: true});    
+                self.set(self.getOrder().get('customer').get('contacts').get(contactId).toJSON(), {
+                    silent: true
+                });
             },
-            calculateStepStatus: function () {
+            calculateStepStatus: function() {
                 if (!this.requiresFulfillmentInfo() && this.requiresDigitalFulfillmentContact()) {
                     this.validation = this.digitalOnlyValidation;
                 }
@@ -95,7 +104,7 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
             //     // since this is one step further away from the order, it has to be accessed differently
             //     return this.parent.parent;
             // },
-            choose: function (e) {
+            choose: function(e) {
                 var idx = parseInt($(e.currentTarget).val(), 10);
                 if (idx !== -1) {
                     var addr = this.get('address');
@@ -105,7 +114,7 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
                     }
                 }
             },
-            toJSON: function () {
+            toJSON: function() {
                 if (this.requiresFulfillmentInfo() || this.requiresDigitalFulfillmentContact()) {
                     return CheckoutStep.prototype.toJSON.apply(this, arguments);
                 }
@@ -117,12 +126,16 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
             },
             //Rename for clear
             // Breakup into seperate api update for fulfillment
-            nextDigitalOnly: function () {
-                var order = this.getOrder(),
-                    self = this;
+            nextDigitalOnly: function() {
+                var self = this,
+                order = this.getOrder();
 
-                if (self.validate()) { return false; }
-                self.getOrder().apiModel.update({ fulfillmentInfo: self.toJSON() }).ensure(function () {
+                if (self.validate()) {
+                    return false;
+                }
+                self.getOrder().apiModel.update({
+                    fulfillmentInfo: self.toJSON()
+                }).ensure(function() {
                     self.isLoading(false);
                     order.messages.reset();
                     order.syncApiModel();
@@ -131,15 +144,15 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
                     return order.get('billingInfo').calculateStepStatus();
                 });
             },
-            validateAddresses : function(){
+            validateAddresses: function() {
                 var self = this,
                     order = this.getOrder(),
                     addr = this.get('address'),
                     deferredValidate = api.defer(),
                     isAddressValidationEnabled = HyprLiveContext.locals.siteContext.generalSettings.isAddressValidationEnabled,
                     allowInvalidAddresses = HyprLiveContext.locals.siteContext.generalSettings.allowInvalidAddresses;
-                
-                var promptValidatedAddress = function () {
+
+                var promptValidatedAddress = function() {
                     order.syncApiModel();
                     self.isLoading(false);
                     // Redundent
@@ -153,25 +166,27 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
                     if (!addr.get('candidateValidatedAddresses')) {
                         var methodToUse = allowInvalidAddresses ? 'validateAddressLenient' : 'validateAddress';
                         addr.syncApiModel();
-                        addr.apiModel[methodToUse]().then(function (resp) {
+                        addr.apiModel[methodToUse]().then(function(resp) {
                             if (resp.data && resp.data.addressCandidates && resp.data.addressCandidates.length) {
                                 if (_.find(resp.data.addressCandidates, addr.is, addr)) {
                                     addr.set('isValidated', true);
-                                        deferredValidate.resolve();
-                                        return;
-                                    }
+                                    deferredValidate.resolve();
+                                    return;
+                                }
                                 addr.set('candidateValidatedAddresses', resp.data.addressCandidates);
                                 promptValidatedAddress();
                             } else {
                                 deferredValidate.resolve();
                             }
-                        }, function (e) {
+                        }, function(e) {
                             if (allowInvalidAddresses) {
                                 // TODO: sink the exception.in a better way.
                                 order.messages.reset();
                                 deferredValidate.reject();
                             } else {
-                                order.messages.reset({ message: Hypr.getLabel('addressValidationError') });
+                                order.messages.reset({
+                                    message: Hypr.getLabel('addressValidationError')
+                                });
                             }
                         });
                     } else {
@@ -182,7 +197,7 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
             },
             // Breakup for validation
             // Break for compelete step
-            next: function () {
+            next: function() {
                 var self = this;
                 if (!self.requiresFulfillmentInfo() && self.requiresDigitalFulfillmentContact()) {
                     return self.nextDigitalOnly();
@@ -198,15 +213,14 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
 
                 //     return false;
                 // }
-               if(!self.validateModel()) return false;
+                if (!self.validateModel()) return false;
 
-               var parent = self.parent,
-                    order = self.getOrder(),
+                var order = self.getOrder(),
                     fulfillmentInfo = self.parent;
 
-                this.isLoading(false);
+                self.isLoading(false);
 
-                var completeStep = function () {
+                var completeStep = function() {
                     order.messages.reset();
                     order.syncApiModel();
                     fulfillmentInfo.getShippingMethodsFromContact();
@@ -227,10 +241,10 @@ function ($, _, Hypr, Backbone, api, CustomerModels, HyprLiveContext, CheckoutSt
                     //     //parent.calculateStepStatus();
                     // });                  
                 };
-                self.validateAddresses().then(function(){
+                self.validateAddresses().then(function() {
                     completeStep();
                 });
             }
         });
-    return FulfillmentContact;
-});
+        return FulfillmentContact;
+    });

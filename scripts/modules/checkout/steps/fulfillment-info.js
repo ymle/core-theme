@@ -34,11 +34,21 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CheckoutStep, FulfillmentC
                     msg: Hypr.getLabel('chooseShippingMethod')
                 }
             },
+            getOrder: function() {
+                return this.parent;
+            },
+            compareShippingMethods: function(newMethods){
+                var self = this;
+                return _.isMatch(self.get('availableShippingMethods'), newMethods);
+            },
             getShippingMethodsFromContact: function(){
                 var self = this;
+                self.isLoading(true);
                 self.getOrder().apiModel.getShippingMethodsFromContact().then(function (methods) {
-                    self.refreshShippingMethods(methods);
-                    self.chooseDefaultShippingMethod();
+                    if(!compareShippingMethods(methods)) {
+                        self.refreshShippingMethods(methods);
+                        self.chooseDefaultShippingMethod();
+                    }
                 }).ensure(function () {
                     //addr.set('candidateValidatedAddresses', null);
                     self.isLoading(false);
