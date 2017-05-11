@@ -3,8 +3,9 @@
     "underscore",
     "hyprlive",
     "backbone",
-    "modules/views-messages"
-], function ($, _, Hypr, Backbone, messageViewFactory) {
+    "modules/views-messages",
+    "modules/child-view-factory"
+], function ($, _, Hypr, Backbone, messageViewFactory, ChildViewFactory) {
 
     var MozuView = Backbone.MozuView = Backbone.View.extend(
 
@@ -37,6 +38,7 @@
         constructor: function (conf) {
             Backbone.View.apply(this, arguments);
             this.template = Hypr.getTemplate(conf.templateName || this.templateName);
+            this.childViews = this.childViews || {};
             this.listenTo(this.model, "sync", this.render);
             this.listenTo(this.model, "loadingchange", this.handleLoadingChange);
             if (this.model.handlesMessages && conf.messagesEl) {
@@ -59,6 +61,14 @@
                     this.listenTo(model, 'change', _.debounce(this.dequeueRender, 150), this);
                     this.listenTo(model, 'change:' + prop, this.enqueueRender, this);
                 }, this);
+            }
+            if(!_.isEmpty(this.childViews)){
+                var self=this;
+                var viewFactory = new ChildViewFactory();
+                _.each(this.childViews, function(view, selector){
+                    viewFactory.add(selector, view, self);
+                });
+                this.childViews = viewFactory;
             }
             Backbone.Validation.bind(this);
             Backbone.MozuView.trigger('create', this);
@@ -158,6 +168,9 @@
                     this.trigger('render', newHtml);
                     Backbone.MozuView.trigger('render', this, newHtml);
                 }
+                if(!_.isEmpty(this.childViews)){
+                    this.renderChildViews();
+                }
             },
 
             storeDropzones: function() {
@@ -172,6 +185,16 @@
                 this.$('.mz-drop-zone').each(function() {
                     if (dropzones[this.id]) $(this).replaceWith(dropzones[this.id]);
                 });
+            },
+
+            renderChildViews: function(){
+
+                var self=this;
+                _.each(this.childViews.views, function(childView){
+                    childView.refresh();
+                    childView.getView().render();
+                });
+
             }
 
             /**

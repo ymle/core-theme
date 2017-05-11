@@ -10,11 +10,10 @@
     'hyprlivecontext',
     'modules/checkout/model-checkout-step',
     'modules/checkout/steps/fulfillment-info',
-    'modules/checkout/steps/billing-info'
+    'modules/checkout/steps/billing-info',
+    'modules/checkout/thirdpartypayments/third-party-payments'
 ],
-    function ($, _, Hypr, Backbone, api, CustomerModels, AddressModels, PaymentMethods, HyprLiveContext, CheckoutStep, FulfillmentInfo, BillingInfo) {
-
-        
+    function ($, _, Hypr, Backbone, api, CustomerModels, AddressModels, PaymentMethods, HyprLiveContext, CheckoutStep, FulfillmentInfo, BillingInfo, ThridPartyPayments) {
         var ShopperNotes = Backbone.MozuModel.extend(),
 
         checkoutPageValidation = {

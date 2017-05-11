@@ -77,7 +77,7 @@
             </p>
         </div>
         
-        <div class="mz-l-stack-section mz-paymentselector-separator mz-checkoutform">
+        <div data-mz-digital-credits class="mz-l-stack-section mz-paymentselector-separator mz-checkoutform">
             {% include "modules/checkout/checkout-digital-credit" %}
         </div>
     </div>

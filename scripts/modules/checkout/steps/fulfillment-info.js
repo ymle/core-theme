@@ -12,7 +12,7 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CheckoutStep, FulfillmentC
 
     var FulfillmentInfo = CheckoutStep.extend({
             initialize: function () {
-                var me = this;
+                var self = this;
                 // 
                 // this.on('change:availableShippingMethods', function (me, value) {
                 //     me.updateShippingMethod(me.get('shippingMethodCode'), true);
@@ -24,6 +24,12 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CheckoutStep, FulfillmentC
                 //     // because the order data will impact the shipping costs.
                 //     me.updateShippingMethod(me.get('shippingMethodCode'), true);
                 // });
+                // 
+                
+                /**
+                 * Used to set default Shipping Method on page load
+                 */
+                self.chooseDefaultShippingMethod();
             },
             relations: {
                 fulfillmentContact: FulfillmentContact
@@ -45,7 +51,7 @@ function ($, _, Hypr, Backbone, api, HyprLiveContext, CheckoutStep, FulfillmentC
                 var self = this;
                 self.isLoading(true);
                 self.getOrder().apiModel.getShippingMethodsFromContact().then(function (methods) {
-                    if(!compareShippingMethods(methods)) {
+                    if(!self.compareShippingMethods(methods)) {
                         self.refreshShippingMethods(methods);
                         self.chooseDefaultShippingMethod();
                     }

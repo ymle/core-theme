@@ -142,135 +142,28 @@ function ($, _, Hypr, Backbone, CheckoutModels, messageViewFactory, CartMonitor,
 
     };
 
-    var visaCheckoutSettings = HyprLiveContext.locals.siteContext.checkoutSettings.visaCheckout;
-    var pageContext = require.mozuData('pagecontext');
-    var BillingInfoView = CheckoutStepView.extend({
-        templateName: 'modules/checkout/step-payment-info',
+    var DigitalCreditsView = Backbone.MozuView.extend({
+        templateName: 'modules/checkout/checkout-digital-credit',
         autoUpdate: [
-            'savedPaymentMethodId',
-            'paymentType',
-            'card.paymentOrCardType',
-            'card.cardNumberPartOrMask',
-            'card.nameOnCard',
-            'card.expireMonth',
-            'card.expireYear',
-            'card.cvv',
-            'card.isCardInfoSaved',
-            'check.nameOnCheck',
-            'check.routingNumber',
-            'check.checkNumber',
-            'isSameBillingShippingAddress',
-            'billingContact.firstName',
-            'billingContact.lastNameOrSurname',
-            'billingContact.address.address1',
-            'billingContact.address.address2',
-            'billingContact.address.address3',
-            'billingContact.address.cityOrTown',
-            'billingContact.address.countryCode',
-            'billingContact.address.stateOrProvince',
-            'billingContact.address.postalOrZipCode',
-            'billingContact.phoneNumbers.home',
-            'billingContact.email',
-            'creditAmountToApply',
-            'digitalCreditCode',
-            'purchaseOrder.purchaseOrderNumber',
-            'purchaseOrder.paymentTerm'
-        ].concat(poCustomFields()),
-        renderOnChange: [
-            'billingContact.address.countryCode',
-            'paymentType',
-            'isSameBillingShippingAddress',
-            'usingSavedCard',
-            'savedPaymentMethodId'
+            'digitalCreditCode'
         ],
         additionalEvents: {
             "change [data-mz-digital-credit-enable]": "enableDigitalCredit",
             "change [data-mz-digital-credit-amount]": "applyDigitalCredit",
-            "change [data-mz-digital-add-remainder-to-customer]": "addRemainderToCustomer",
-            "change [name='paymentType']": "resetPaymentData",
-            "change [data-mz-purchase-order-payment-term]": "updatePurchaseOrderPaymentTerm"
+            "change [data-mz-digital-add-remainder-to-customer]": "addRemainderToCustomer"
         },
-
+        handleLoadingChange: function (isLoading) {
+            // override adding the isLoading class so the apply button 
+            // doesn't go loading whenever other parts of the order change
+        },
         initialize: function () {
-            // this.addPOCustomFieldAutoUpdate();
-            this.listenTo(this.model, 'change:digitalCreditCode', this.onEnterDigitalCreditCode, this);
-            this.listenTo(this.model, 'orderPayment', function (order, scope) {
-                    this.render();
-            }, this);
-            this.listenTo(this.model, 'change:savedPaymentMethodId', function (order, scope) {
-                $('[data-mz-saved-cvv]').val('').change();
-                this.render();
-            }, this);
-            this.codeEntered = !!this.model.get('digitalCreditCode');
-        },
-        resetPaymentData: function (e) {
-            if (e.target !== $('[data-mz-saved-credit-card]')[0]) {
-                $("[name='savedPaymentMethods']").val('0');
-            }
-            this.model.clear();
-            this.model.resetAddressDefaults();
-            if(HyprLiveContext.locals.siteContext.checkoutSettings.purchaseOrder.isEnabled) {
-                this.model.resetPOInfo();
-            }
-        },
-        updatePurchaseOrderPaymentTerm: function(e) {
-            this.model.setPurchaseOrderPaymentTerm(e.target.value);
-        },
-        render: function() {
-            preserveElements(this, ['.v-button'], function() {
-                CheckoutStepView.prototype.render.apply(this, arguments);
-            });
-            var status = this.model.stepStatus();
-            if (visaCheckoutSettings.isEnabled && !this.visaCheckoutInitialized && this.$('.v-button').length > 0) {
-                window.onVisaCheckoutReady = _.bind(this.initVisaCheckout, this);
-                require([pageContext.visaCheckoutJavaScriptSdkUrl]);
-                this.visaCheckoutInitialized = true;
-            }
-        },
-        updateAcceptsMarketing: function(e) {
-            this.model.getOrder().set('acceptsMarketing', $(e.currentTarget).prop('checked'));
-        },
-        updatePaymentType: function(e) {
-            var newType = $(e.currentTarget).val();
-            this.model.set('usingSavedCard', e.currentTarget.hasAttribute('data-mz-saved-credit-card'));
-            this.model.set('paymentType', newType);
-        },
-        beginEditingCard: function() {
-            var me = this;
-            var isVisaCheckout = this.model.visaCheckoutFlowComplete();
-            if (!isVisaCheckout) {
-                this.editing.savedCard = true;
-                this.render();
-            } else {
-                this.doModelAction('cancelVisaCheckout').then(function() {
-                    me.editing.savedCard = false;
-                    me.render();
-                });
-            }
-        },
-        beginEditingBillingAddress: function() {
-            this.editing.savedBillingAddress = true;
-            this.render();
-        },
-        beginApplyCredit: function () {
-            this.model.beginApplyCredit();
-            this.render();
-        },
-        cancelApplyCredit: function () {
-            this.model.closeApplyCredit();
-            this.render();
-        },
-        finishApplyCredit: function () {
             var self = this;
-            this.model.finishApplyCredit().then(function() {
-                self.render();
-            });
-        },
-        removeCredit: function (e) {
-            var self = this,
-                id = $(e.currentTarget).data('mzCreditId');
-            this.model.removeCredit(id).then(function () {
-                self.render();
+            this.listenTo(this.model, 'change:digitalCreditCode', this.onEnterDigitalCreditCode, this);
+            this.codeEntered = !!this.model.get('digitalCreditCode');
+            this.$el.on('keypress', 'input', function (e) {
+                if (e.which === 13) {
+                    self.handleEnterKey();
+                }
             });
         },
         getDigitalCredit: function (e) {
@@ -323,7 +216,7 @@ function ($, _, Hypr, Backbone, CheckoutModels, messageViewFactory, CartMonitor,
             }
         },
         addRemainderToCustomer: function (e) {
-            var creditCode = $(e.currentTarget).attr('data-mz-credit-code-to-tie-to-customer'),
+            var creditCode = $(e.currentTarget).attr('data-mz-digital-code-to-tie-to-customer'),
                 isEnabled = $(e.currentTarget).prop('checked') === true;
             this.model.addRemainingCreditToCustomerAccount(creditCode, isEnabled);
         },
@@ -336,6 +229,120 @@ function ($, _, Hypr, Backbone, CheckoutModels, messageViewFactory, CartMonitor,
                 case "digitalCreditCode":
                     return this.getDigitalCredit(e);
             }
+        }
+    });
+
+    var visaCheckoutSettings = HyprLiveContext.locals.siteContext.checkoutSettings.visaCheckout;
+    var pageContext = require.mozuData('pagecontext');
+    var BillingInfoView = CheckoutStepView.extend({
+        getModel : function(){
+            return this.model;
+        },
+        templateName: 'modules/checkout/step-payment-info',
+        autoUpdate: [
+            'savedPaymentMethodId',
+            'paymentType',
+            'card.paymentOrCardType',
+            'card.cardNumberPartOrMask',
+            'card.nameOnCard',
+            'card.expireMonth',
+            'card.expireYear',
+            'card.cvv',
+            'card.isCardInfoSaved',
+            'check.nameOnCheck',
+            'check.routingNumber',
+            'check.checkNumber',
+            'isSameBillingShippingAddress',
+            'billingContact.firstName',
+            'billingContact.lastNameOrSurname',
+            'billingContact.address.address1',
+            'billingContact.address.address2',
+            'billingContact.address.address3',
+            'billingContact.address.cityOrTown',
+            'billingContact.address.countryCode',
+            'billingContact.address.stateOrProvince',
+            'billingContact.address.postalOrZipCode',
+            'billingContact.phoneNumbers.home',
+            'billingContact.email',
+            'creditAmountToApply',
+            'purchaseOrder.purchaseOrderNumber',
+            'purchaseOrder.paymentTerm'
+        ].concat(poCustomFields()),
+        renderOnChange: [
+            'billingContact.address.countryCode',
+            'paymentType',
+            'usingSavedCard',
+            'savedPaymentMethodId',
+            'isSameBillingShippingAddress'
+        ],
+        additionalEvents: {
+            "change [name='paymentType']": "resetPaymentData",
+            "change [data-mz-is-same-billing-shipping-address]": "toggleIsSameBillingShippingAddress"
+        },
+        childViews: {
+            "[data-mz-digital-credits]":  DigitalCreditsView
+        },
+        initialize: function () {
+            // this.addPOCustomFieldAutoUpdate();
+            this.listenTo(this.model, 'orderPayment', function (order, scope) {
+                    this.render();
+            }, this);
+            this.listenTo(this.model, 'change:savedPaymentMethodId', function (order, scope) {
+                $('[data-mz-saved-cvv]').val('').change();
+                this.render();
+            }, this);
+        },
+        toggleIsSameBillingShippingAddress: function(e){
+            this.model.toggleSameAsShippingAdress(e.target.checked);  
+        },
+        resetPaymentData: function (e) {
+            if (e.target !== $('[data-mz-saved-credit-card]')[0]) {
+                $("[name='savedPaymentMethods']").val('0');
+            }
+            this.model.clear();
+            this.model.resetAddressDefaults();
+            if(HyprLiveContext.locals.siteContext.checkoutSettings.purchaseOrder.isEnabled) {
+                this.model.resetPOInfo();
+            }
+        },
+        updatePurchaseOrderPaymentTerm: function(e) {
+            this.model.setPurchaseOrderPaymentTerm(e.target.value);
+        },
+        render: function() {
+            preserveElements(this, ['.v-button'], function() {
+                CheckoutStepView.prototype.render.apply(this, arguments);
+            });
+            var status = this.model.stepStatus();
+            if (visaCheckoutSettings.isEnabled && !this.visaCheckoutInitialized && this.$('.v-button').length > 0) {
+                window.onVisaCheckoutReady = _.bind(this.initVisaCheckout, this);
+                require([pageContext.visaCheckoutJavaScriptSdkUrl]);
+                this.visaCheckoutInitialized = true;
+            }
+        },
+        updateAcceptsMarketing: function(e) {
+            this.model.getOrder().set('acceptsMarketing', $(e.currentTarget).prop('checked'));
+        },
+        updatePaymentType: function(e) {
+            var newType = $(e.currentTarget).val();
+            this.model.set('usingSavedCard', e.currentTarget.hasAttribute('data-mz-saved-credit-card'));
+            this.model.set('paymentType', newType);
+        },
+        beginEditingCard: function() {
+            var me = this;
+            var isVisaCheckout = this.model.ThirdPartyPayments.VisaCheckout.visaCheckoutFlowComplete();
+            if (!isVisaCheckout) {
+                this.editing.savedCard = true;
+                this.render();
+            } else {
+                this.doModelAction('cancelVisaCheckout').then(function() {
+                    me.editing.savedCard = false;
+                    me.render();
+                });
+            }
+        },
+        beginEditingBillingAddress: function() {
+            this.editing.savedBillingAddress = true;
+            this.render();
         },
         /* begin visa checkout */
         initVisaCheckout: function () {
@@ -358,19 +365,19 @@ function ($, _, Hypr, Backbone, CheckoutModels, messageViewFactory, CartMonitor,
                 me.model.parent.processDigitalWallet('VisaCheckout', payment);
             });
 
-          
-
             window.V.init({
                 apikey: apiKey,
                 clientId: clientId,
                 paymentRequest: {
                     currencyCode: orderModel.get('currencyCode'),
                     subtotal: "" + orderModel.get('subtotal')
-                }
+                } 
             });
         }
         /* end visa checkout */
     });
+
+    
 
     var CouponView = Backbone.MozuView.extend({
         templateName: 'modules/checkout/coupon-code-field',
@@ -543,11 +550,6 @@ function ($, _, Hypr, Backbone, CheckoutModels, messageViewFactory, CartMonitor,
                 }),
                 comments: Hypr.getThemeSetting('showCheckoutCommentsField') && new CommentsView({
                     el: $('#comments-field'),
-                    model: checkoutModel
-                }),
-                
-                reviewPanel: new ReviewOrderView({
-                    el: $('#step-review'),
                     model: checkoutModel
                 }),
                 messageView: messageViewFactory({

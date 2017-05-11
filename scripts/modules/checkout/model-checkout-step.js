@@ -4,7 +4,7 @@ define([
     'hyprlive',
     'modules/backbone-mozu',
     'modules/api',
-    'hyprlivecontext',
+    'hyprlivecontext'
 ],
 function ($, _, Hypr, Backbone, api, HyprLiveContext) {
 

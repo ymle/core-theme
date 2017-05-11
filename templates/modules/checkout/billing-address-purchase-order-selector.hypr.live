@@ -1,7 +1,7 @@
 {% if model.requiresFulfillmentInfo and not model.purchaseOrder.usingBillingContact %}
 <div class="mz-l-formfieldgroup mz-l-formfieldgroup-norows">
     <label>
-        <input type="checkbox" data-mz-value="isSameBillingShippingAddress" value="true" {% if model.isSameBillingShippingAddress %}checked="checked"{% endif %}>{{ labels.useShippingAddress }}
+        <input type="checkbox" data-mz-is-same-billing-shipping-address value="true" {% if model.isSameBillingShippingAddress %}checked="checked"{% endif %}>{{ labels.useShippingAddress }}
     </label>
 </div>
 {% endif %}

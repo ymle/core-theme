@@ -66,8 +66,12 @@
           </div>
         </label>
         {% endif %}
+        <div id="step-shipping-method">
+        {% include "modules/checkout/step-shipping-method" %}
+      </div>
       </div>
         {% endif %}
+      
     <div class="mz-formstep-next">
         <button class="mz-button" data-mz-action="next">{{ labels.next }}</button>
     </div>

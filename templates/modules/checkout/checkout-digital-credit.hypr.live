@@ -52,7 +52,7 @@
           {% if not model.isAnonymousShopper and not credit.attributes.isTiedToCustomer and credit.attributes.isEnabled and credit.attributes.remainingBalance > 0 %}
             <input type="checkbox" data-mz-value="credit.attributes.addRemainderToCustomer"
                     data-mz-digital-add-remainder-to-customer
-                    data-mz-credit-code-to-tie-to-customer="{{ credit.attributes.code }}"
+                    data-mz-digital-code-to-tie-to-customer="{{ credit.attributes.code }}"
                     id="addCust{{ credit.attributes.code }}"
                     value="true" {% if credit.attributes.isTiedToCustomer %}disabled="true" checked="true"{% else %} {% if credit.attributes.addRemainderToCustomer %}checked="true"{% endif %} {% endif %}/>
           {% endif %}

@@ -450,7 +450,24 @@
                 var attrs = _.clone(this.attributes);
                 if (options && options.helpers) {
                     _.each(this.getHelpers(), function(helper) {
-                        attrs[helper] = this[helper]();
+                        var dotSeparated = helper.split('.');
+                        if(dotSeparated.length > 1) {
+                            var me = this;
+                            attrs[dotSeparated[dotSeparated.length - 1]] = function(){
+                                var self = me;
+                                var last = self;
+                                _.each(dotSeparated, function(value, key){
+                                    if(typeof last[value] === 'function') {
+                                        last = last[value].call(self);
+                                    } else {
+                                        last = last[value];
+                                    }
+                                })
+                                return last;
+                            }();   
+                        } else {
+                            attrs[helper] = this[helper]();
+                        }
                     }, this);
                     if (this.hasMessages) attrs.messages = this.messages.toJSON();
                     if (this.validation) attrs.isValid = this.isValid(options.forceValidation);
@@ -463,8 +480,37 @@
                 });
 
                 return (options && options.ensureCopy) ? JSON.parse(JSON.stringify(attrs)) : attrs;
+            },
+
+            // extendModel: function(key, val, options){
+            //     this.model.set(key, val, options);
+            // }
+            
+            extendModel: function(models){
+                var self = this;
+                if(!_.isEmpty(this.extendModelWith)){
+                    _.each(models, function(value, key){
+                        
+                        //var obj = {};
+                        //self[key] = value;
+                        if(_.has(value, 'helpers')){
+                            var helpers = self.getHelpers();
+                            if (helpers && helpers.length > 0){
+                                _.each(value.helpers, function(helper){
+                                    var fullKeyPath = helper;
+                                    self.helpers.push(fullKeyPath);
+                                })
+                                delete value.healpers
+                            }
+                        }
+                        for (var attrname in value) { self[attrname] = value[attrname]; }
+                    })
+                }
             }
+
         });
+
+
 
         // we have to attach the constructor to the prototype via direct assignment,
         // because iterative extend methods don't work on the 'constructor' property
@@ -472,8 +518,12 @@
 
         modelProto.constructor = function(conf) {
             this.helpers = (this.helpers || []).concat(['isLoading', 'isValid']);
+            
             Backbone.Model.apply(this, arguments);
             if (this.mozuType) this.initApiModel(conf);
+            if(this.extendModelWith) { 
+                this.extendModel(this.extendModelWith);
+            }
             if (this.handlesMessages) {
                 this.initMessages();
             } else {

@@ -6,13 +6,21 @@ define([
     'modules/api',
     'modules/models-customer',
     'modules/models-paymentmethods',
-    'hyprlivecontext',
-    'modules/checkout/steps/billing-info'
+    'hyprlivecontext'
 ],
-function ($, _, Hypr, Backbone, api, CustomerModels, PaymentMethods, HyprLiveContext, BillingInfo) {
-    var VisaCheckout = Backbone.MozuModel.extend({
+function ($, _, Hypr, Backbone, api, CustomerModels, PaymentMethods, HyprLiveContext) {
+    
+    var ThirdPartyPayments = Backbone.MozuModel.extend({
+
+    });
+
+    var VisaCheckout = ThirdPartyPayments.extend({
         helpers: ['visaCheckoutFlowComplete'],
-    	visaCheckoutFlowComplete: function() {
+        initialize: function() {
+            var self = this;
+
+        },
+        visaCheckoutFlowComplete: function() {
             return this.get('paymentWorkflow') === 'VisaCheckout';
         },
         cancelVisaCheckout: function() {
@@ -28,5 +36,10 @@ function ($, _, Hypr, Backbone, api, CustomerModels, PaymentMethods, HyprLiveCon
                 self.setDefaultPaymentType(self);
             });
         }
-    })
+    });
+
+    return {
+        VisaCheckout: VisaCheckout
+    }
+
 });

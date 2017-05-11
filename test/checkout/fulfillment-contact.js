@@ -1,11 +1,10 @@
-describe("Checkout Test Suite", function() {
+describe("Checkout Fullfilment Contact", function() {
   var a;
 
-  it("Checkout Instance Setup", function() {
-    window.location.href = "https://t17238-s26790.sandbox.mozu.com"
-    
+  it("and so is a spec", function() {
+    a = false;
 
-    expect(a).toBe("Checkout - Mystic Demo - Master");
+    expect(a).toBe(true);
   });
 
   it("Not", function() {
