@@ -488,6 +488,8 @@
                     order = self.getOrder();
                 return order.apiAddStoreCredit({
                     storeCreditCode: this.get('selectedCredit'),
+                    storeCreditType: this.get('creditType'),
+                    customCreditType: this.get('customCreditType'),
                     amount: this.get('creditAmountToApply')
                 }).then(function (o) {
                     order.set(o.data);
@@ -647,6 +649,8 @@
                                 
                                 return order.apiAddStoreCredit({
                                     storeCreditCode: creditCode,
+                                    storeCreditType: digitalCredit.get('creditType'),
+                                    customCreditType: digitalCredit.get('customCreditType'),
                                     amount: creditAmountToApply
                                 }).then(function (o) {
                                     self.refreshBillingInfoAfterAddingStoreCredit(order, o.data);
@@ -670,6 +674,8 @@
 
                 return order.apiAddStoreCredit({
                     storeCreditCode: creditCode,
+                    storeCreditType: digitalCredit.get('creditType'),
+                    customCreditType: digitalCredit.get('customCreditType'),
                     amount: creditAmountToApply,
                     email: self.get('billingContact').get('email')
                 }).then(function (o) {
@@ -693,18 +699,101 @@
                 return (Math.abs(f1 - f2)) < epsilon; 
             },
 
+            isAceReward: function (credit) {
+                if (credit.attributes) {
+                    return (credit.get('customCreditType') === 'AceReward');
+                }
+                return (credit.customCreditType === 'AceReward');
+            },
+            getStoreCreditPayment: function (credit) {
+                var self = this;
+                var sameCreditPayment = _.find(self.activeStoreCredits(), function (cred) {
+                    return cred.status !== 'Voided' && cred.billingInfo && cred.billingInfo.storeCreditCode.toLowerCase() === credit.get('code').toLowerCase();
+                });
+                return sameCreditPayment;
+            },
+            removeAceRewards: function () {
+                var self = this;
+                var order = this.getOrder();
+
+                var aceCredits = self._cachedDigitalCredits.filter(function (credit) {
+                    return self.isAceReward(credit);
+                });
+
+                var enabledAceCredits = _.filter(aceCredits, function (credit) {
+                    return credit.get('isEnabled');
+                });
+
+                var orderUpdate = _.after(enabledAceCredits.length, order.update);
+
+                _.each(aceCredits, function (credit) {
+                    if (credit.get('isEnabled')) {
+                        var payment = self.getStoreCreditPayment(credit);
+                        order.apiVoidPayment(payment.id);
+                    }
+                    self._cachedDigitalCredits.remove(credit);
+                });
+            },
+            orderAceRewardAttr: function () {
+                var self = this;
+                var attrs = self.getOrder().get('attributes');
+                return _.findWhere(attrs, { fullyQualifiedName: 'tenant~AceRewardNumber' });
+            },
+            mapAceRewardNumber: function (rewardNumber) {
+                var self = this;
+                if (!rewardNumber && !self.orderAceRewardAttr()) {
+                    var customerRewardAttr = self.getOrder().get('customer').get('attributes').find(function (attr) {
+                        return attr.get('fullyQualifiedName') == 'tenant~ace-reward-number';
+                    });
+                    if (customerRewardAttr) {
+                        rewardNumber = customerRewardAttr.get('values')[0];
+                    }
+                }
+                if (rewardNumber) {
+                    self.getOrder().set('orderAttribute-tenant~AceRewardNumber', rewardNumber);
+                    self.updateAceRewardAttr();
+                }
+            },
+            updateAceRewardAttr: function () {
+                var self = this;
+                var updateAttrs = [];
+                var aceRewardAttr = self.getOrder().get('orderAttribute-tenant~AceRewardNumber');
+                if (aceRewardAttr) {
+                    updateAttrs.push({
+                        'fullyQualifiedName': 'tenant~AceRewardNumber',
+                        'values': [aceRewardAttr]
+                    });
+                }
+
+                if (updateAttrs.length > 0) {
+                    return self.getOrder().apiUpdateAttributes(updateAttrs);
+                }
+            },
             retrieveDigitalCredit: function (customer, creditCode, me, amountRequested) {
                 var self = this;
-                return customer.apiGetDigitalCredit(creditCode).then(function (credit) {
-                    var creditModel = new PaymentMethods.DigitalCredit(credit.data);
-                    creditModel.set('isTiedToCustomer', false);
 
-                    var validateCredit = function() {
+                return api.action('storecredits', 'get', { filter: 'code eq ' + creditCode }).then(function (credits) {
+
+                    if (credits.data.items.length > 1 && _.find(credits.data.items, function (credit) { return me.isAceReward(credit); })) {
+                        me.removeAceRewards();
+                        me.mapAceRewardNumber(creditCode);
+                        var creditModels = _.each(credits.data.items, function (credit, idx) {
+                            var creditModel = new PaymentMethods.DigitalCredit(credit);
+                            me._cachedDigitalCredits.add(creditModel);
+                        });
+                        self.trigger('updateCheckoutPayment');
+                        return creditModels;
+                    }
+
+                    var creditModel = new PaymentMethods.DigitalCredit(credits.data.items[0]);
+                    creditModel.set('isTiedToCustomer', false);
+                    var creditType = creditModel.get('storeCreditType');
+                    var validateCredit = function () {
                         var now = new Date(),
                             activationDate = creditModel.get('activationDate') ? new Date(creditModel.get('activationDate')) : null,
                             expDate = creditModel.get('expirationDate') ? new Date(creditModel.get('expirationDate')) : null;
                         if (expDate && expDate < now) {
-                            return self.deferredError(Hypr.getLabel('digitalCreditExpired', expDate.toLocaleDateString()), self);
+                            return self.deferredError(Hypr.getLabel('expiredCredit', expDate.toLocaleDateString()), self);
                         }
                         if (activationDate && activationDate > now) {
                             return self.deferredError(Hypr.getLabel('digitalCreditNotYetActive', activationDate.toLocaleDateString()), self);
@@ -719,7 +808,7 @@
                     if (validate !== null) {
                         return null;
                     }
-                    
+
                     var maxAmt = me.getMaxCreditToApply(creditModel, me, amountRequested);
                     if (!!amountRequested && amountRequested < maxAmt) {
                         maxAmt = amountRequested;
@@ -730,6 +819,7 @@
 
                     me._cachedDigitalCredits.push(creditModel);
                     me.applyDigitalCredit(creditCode, maxAmt, true);
+
                     me.trigger('sync', creditModel);
                     return creditModel;
                 });
@@ -1036,6 +1126,7 @@
                             me.setSavedPaymentMethod(me.get('savedPaymentMethodId'));
                         }
                     });
+                    me.mapAceRewardNumber();
                 });
                 var billingContact = this.get('billingContact');
                 this.on('change:paymentType', this.selectPaymentType);

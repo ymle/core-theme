@@ -190,6 +190,9 @@ require(["modules/jquery-mozu",
             this.listenTo(this.model, 'orderPayment', function (order, scope) {
                     this.render();
             }, this);
+            this.listenTo(this.model, 'updateCheckoutPayment', function (order, scope) {
+                this.render();
+            }, this);
             this.listenTo(this.model, 'billingContactUpdate', function (order, scope) {
                     this.render();
             }, this);
@@ -445,7 +448,9 @@ require(["modules/jquery-mozu",
         if(storefrontOrderAttributes && storefrontOrderAttributes.length > 0) {
 
             storefrontOrderAttributes.forEach(function(attributeDef){
+                if (attributeDef.isVisible) {
                 fields.push('orderAttribute-' + attributeDef.attributeFQN);
+                }
             }, this);
 
         }
