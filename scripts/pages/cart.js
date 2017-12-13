@@ -8,9 +8,10 @@ define(['modules/api',
         'hyprlive',
         'modules/preserve-element-through-render',
         'modules/modal-dialog',
-        'modules/xpress-paypal',
-        'modules/models-location'
-      ], function (api, Backbone, _, $, CartModels, CartMonitor, HyprLiveContext, Hypr, preserveElement, modalDialog, paypal, LocationModels) {
+        'modules/views-modal-dialog',
+        'modules/models-location',
+        'modules/xpress-paypal'
+      ], function (api, Backbone, _, $, CartModels, CartMonitor, HyprLiveContext, Hypr, preserveElement, modalDialog, ModalDialogView, LocationModels, paypal) {
 
 
     var CartView = Backbone.MozuView.extend({
@@ -313,6 +314,25 @@ define(['modules/api',
         }
     });
 
+    var LocationDialogView = ModalDialogView.extend({
+      templateName: 'modules/cart/modal-location-select',
+      initialize: function(){
+        console.log("Initialized dialog");
+      },
+      render: function() {
+        Backbone.MozuView.prototype.render.apply(this);
+      },
+      handleDialogClose: function(){
+        console.log("Dialog handle close");
+      }
+    });
+
+    var LocationDialogCollection = LocationModels.LocationCollection.extend({
+      initialize: function(){
+        console.log("HUHAH?");
+      }
+    });
+
   function renderVisaCheckout(model) {
 
     var visaCheckoutSettings = HyprLiveContext.locals.siteContext.checkoutSettings.visaCheckout;
@@ -406,6 +426,19 @@ define(['modules/api',
 
         renderVisaCheckout(cartModel);
         paypal.loadScript();
+
+        var fakeLocationCollection = new LocationModels.LocationCollection({whatsThisValue: "It's a value!!"});
+        console.log("Beginning collection:");
+        console.log(fakeLocationCollection);
+        fakeLocationCollection.apiGetForProduct({productCode: 'sp_01'}).then(function(){
+          var modalView = new LocationDialogView({
+            model: fakeLocationCollection,
+            el: $('#mz-location-selector'),
+            elementId: 'mz-location-selector'
+          });
+
+          modalView.handleDialogOpen();
+        })
     });
 
 });

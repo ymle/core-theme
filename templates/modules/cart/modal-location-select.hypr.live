@@ -1,0 +1,38 @@
+{% extends "modules/common/modal-dialog" %}
+{% block modal-header %}
+<button class="close" type="button" aria-hidden="true" mz-action>&times;</button>
+<h3 class="modal-title">Store Locator</h3>
+{% endblock modal-header %}
+{% block modal-body %}
+{% for location in model.items %}
+<div class="location-select-option" style="display:flex" data-mz-cart-item>
+  <div style="flex:1">
+    <h4 style="margin: 6.25px 0 6.25px">{{location.name}}</h4>
+    <div class="mz-addresssummary">
+        {% include "modules/common/address-summary" with model=location %}
+    </div>
+  </div>
+  <div style="flex:1">
+    <div class="mz-locationlisting-inventory">
+        <p {% if location.quantity == 0 %} class="mz-locationselect-unavailable" {% else %} class="mz-locationselect-available" {% endif %}>
+            {% if location.quantity == 0 %}
+            {{ labels.outOfStock }}
+            {% else %}
+            {{ labels.availableNow }}
+            {% endif %}
+        </p>
+    </div>
+    {% if location.distance %}
+    <div class="mz-locationlisting-distance">
+        {{ labels.milesAway|string_format(location.distance) }}
+    </div>
+    {% endif %}
+    <div class="mz-locationlisting-actions">
+        <button class="mz-button mz-store-select-button" {% if location.quantity == 0 %}disabled="disabled"{% endif %} data-mz-action="addToCartForPickup" data-mz-location="{{ model.code }}" data-mz-name="{{ model.name }}">{{ labels.addToCart }}</button>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endblock modal-body %}
+{% block modal-footer %}
+{% endblock modal-footer %}

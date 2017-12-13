@@ -7,15 +7,17 @@
 {% block body-content %}
 
     {% require_script "pages/location" %}
-    
+
     {% preload_json model "product" %}
+    YAYA
+    {% dump model %}
 
     <div class="mz-l-container">
-        <h1 class="mz-pagetitle">{{ labels.localStores }}</h1>
+        <h1 class="mz-pagetitle">{{ labels.localStores }} ......?</h1>
         <div class="mz-l-stack">
             <p class="mz-locationsearch-pleasewait">
                 {{ labels.locationWait|safe }}
-             </p> 
+             </p>
             <div class="mz-l-stack-section mz-locationlist fades-in" id="location-list">
                 {% include "modules/location/locations" with model=model.locations %}
             </div>
