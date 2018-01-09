@@ -90,7 +90,6 @@ define(['underscore', 'modules/backbone-mozu', 'hyprlive', "modules/api", "modul
         },
 
         initialize: function() {
-            this.checkBOGA();
             var self = this;
             this.get("items").on('sync remove', this.fetch, this)
                              .on('loadingchange', this.isLoading, this);
