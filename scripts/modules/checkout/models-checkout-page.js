@@ -610,23 +610,24 @@ var CheckoutPage = Backbone.MozuModel.extend({
 
                     return mergedTypes;
             },
-            saveCustomerContacts: function() {
+            saveCustomerContacts: function () {
                 var customer = this.get('customer');
                 var destinations = this.get('destinations');
                 var existingContacts = customer.get('contacts').toJSON() || [];
                 var updatedContacts = [];
                 var self = this;
 
-                destinations.each(function(destination) {
+                destinations.each(function (destination) {
                     if (!destination.get("isGiftCardDestination")) {
                         var destinationContact = destination.get('destinationContact').toJSON();
                         var existingContactIndex = existingContacts.length > 0 ?
                             self.getContactIndex(existingContacts, destinationContact)
                             : -1;
+                        var validAddress = self.isValidAddress(destinationContact.address)
 
-                        if (existingContactIndex && existingContactIndex === -1) {
+                        if (existingContactIndex && existingContactIndex === -1 && validAddress) {
                             delete destinationContact.id;
-                            destinationContact.types =  [{
+                            destinationContact.types = [{
                                 "name": "Shipping",
                                 "isPrimary": (destination.get('destinationContact').contactTypeHelpers().isPrimaryShipping()) ? true : false
                             }];
