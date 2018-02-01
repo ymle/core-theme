@@ -1,4 +1,4 @@
-﻿define([
+define([
     'modules/jquery-mozu',
     'underscore',
     'hyprlive',
@@ -1097,6 +1097,14 @@
             },
             hasPaymentChanged: function(payment) {
 
+              function getPurchaseOrder(obj) {
+                  if(obj.purchaseOrder){
+                      if(obj.purchaseOrder.code){
+                          return obj.purchaseOrder;
+                      }
+                  }
+                  return {};
+              }
                 // fix this for purchase orders, currently it constantly voids, then re-applys the payment even if nothing changes.
                 function normalizeBillingInfos(obj) {
                     return {
@@ -1127,7 +1135,7 @@
                             id: obj.card.paymentServiceCardId || obj.card.id,
                             isCardInfoSaved: obj.card.isCardInfoSaved || false
                         }) : {},
-                        purchaseOrder: obj.purchaseOrder || {},
+                        purchaseOrder: getPurchaseOrder(obj),
                         check: obj.check || {}
                     };
                 }
@@ -1140,6 +1148,7 @@
                 }
 
                 return !_.isEqual(normalizedSavedPaymentInfo, normalizedLiveBillingInfo);
+
             },
             submit: function () {
 
