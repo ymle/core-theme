@@ -627,7 +627,7 @@ var CheckoutPage = Backbone.MozuModel.extend({
                         var existingContactIndex = existingContacts.length > 0 ?
                             self.getContactIndex(existingContacts, destinationContact)
                             : -1;
-                        var validAddress = self.isValidAddress(destinationContact.address) 
+                        var validAddress = self.isValidAddress(destinationContact.address);
 
                         if (existingContactIndex && existingContactIndex === -1 && validAddress) {
                             delete destinationContact.id;
