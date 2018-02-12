@@ -461,6 +461,7 @@
     "viewCart": "View Cart",
     "viewOrderHistory": "View order history",
     "visaCheckoutEditReminder": "For security reasons you cannot edit the credit card information from Visa Checkout. If you proceed, your Visa Checkout details will be removed and this order will be processed without Visa Checkout.",
+    "visaCheckoutError": "There was a problem processing your Visa Checkout payment.",
     "volumePriceMinMaxQty": "{0} - {1}",
     "volumePriceMinOnlyQty": "{0}+",
     "volumePriceQuantity": "Quantity",

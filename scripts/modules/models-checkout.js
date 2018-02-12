@@ -1422,7 +1422,6 @@ define([
                             this.trigger('sync');
                             this.isLoading(false);
                         });
-                        me.updateShippingInfo();
                     });
                 });
             },
@@ -1434,6 +1433,7 @@ define([
             },
             updateVisaCheckoutBillingInfo: function() {
                 //Update the billing info with visa checkout payment
+                var me = this;
                 var billingInfo = this.get('billingInfo');
                 var activePayments = this.apiModel.getActivePayments();
                 var visaCheckoutPayment = activePayments && _.findWhere(activePayments, { paymentWorkflow: 'VisaCheckout' });
@@ -1446,6 +1446,13 @@ define([
                     billingInfo.set('paymentWorkflow', visaCheckoutPayment.paymentWorkflow);
                     billingInfo.set('paymentType', visaCheckoutPayment.paymentType);
                     this.refresh();
+                    this.updateShippingInfo();
+                } else {
+                  this.refresh().then(function(){
+                    me.trigger('error', {
+                      message: Hypr.getLabel('visaCheckoutError')
+                    });
+                  });
                 }
             },
             addCoupon: function () {
