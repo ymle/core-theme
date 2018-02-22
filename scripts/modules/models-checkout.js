@@ -701,9 +701,9 @@
 
             isAceReward: function (credit) {
                 if (credit.attributes) {
-                    return (credit.get('customCreditType') === 'AceReward');
+                    return (credit.get('customCreditType') === 'AR');
                 }
-                return (credit.customCreditType === 'AceReward');
+                return (credit.customCreditType === 'AR');
             },
             getStoreCreditPayment: function (credit) {
                 var self = this;

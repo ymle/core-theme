@@ -229,7 +229,7 @@ define([
                 _.each(activeCredits, function (activeCred) {
                     var currentCredCode = activeCred.billingInfo.storeCreditCode;
                     var currentCredAmount = activeCred.amountRequested;
-                    if (activeCred.billingInfo.customCreditType === 'AceReward' && me.orderAceRewardAttr()){
+                    if (activeCred.billingInfo.customCreditType === 'AR' && me.orderAceRewardAttr()){
                         currentCredCode = me.orderAceRewardAttr().values[0];
                     }
                     return me.retrieveDigitalCredit(customer, currentCredCode, me, currentCredAmount).then(function(digCredit) {
@@ -391,9 +391,9 @@ define([
 
             isAceReward: function(credit){
                 if (credit.attributes) {
-                    return (credit.get('customCreditType') === 'AceReward');
+                    return (credit.get('customCreditType') === 'AR');
                 }
-                return (credit.customCreditType === 'AceReward');
+                return (credit.customCreditType === 'AR');
             },
             getStoreCreditPayment: function(credit){
                 var self = this;
