@@ -639,6 +639,12 @@ var CheckoutPage = Backbone.MozuModel.extend({
 
                     return mergedTypes;
             },
+            isValidAddress: function (address) {
+                if (address.address1 && address.cityOrTown) {
+                    return true;
+                }
+                return false;
+            },
             saveCustomerContacts: function() {
                 var customer = this.get('customer');
                 var destinations = this.get('destinations');
@@ -653,7 +659,7 @@ var CheckoutPage = Backbone.MozuModel.extend({
                             self.getContactIndex(existingContacts, destinationContact)
                             : -1;
 
-                        if (existingContactIndex && existingContactIndex === -1) {
+                        if (existingContactIndex && existingContactIndex === -1 && validAddress) {
                             delete destinationContact.id;
                             destinationContact.types =  [{
                                 "name": "Shipping",
