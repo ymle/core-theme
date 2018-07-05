@@ -183,7 +183,8 @@ define(['underscore', 'modules/backbone-mozu', 'hyprlive', "modules/api", "modul
             });
         },
         removeItem: function (id) {
-            return this.get('items').get(id).apiModel.del();
+            this.get('items').get(id).apiModel.del();
+            return this.remove(id);
         },
         addCoupon: function () {
             var me = this;

@@ -64,7 +64,7 @@ define(['modules/api',
                 id = $qField.data('mz-cart-item'),
                 item = this.model.get("items").get(id);
 
-            if (item && !isNaN(newQuantity)) {
+            if (item && !isNaN(newQuantity) && newQuantity !== item.get('quantity')) {
                 item.set('quantity', newQuantity);
                 item.saveQuantity();
             }
@@ -88,6 +88,7 @@ define(['modules/api',
             var $removeButton = $(e.currentTarget),
                 id = $removeButton.data('mz-cart-item');
             this.model.removeItem(id);
+            this.render();
             return false;
         },
         empty: function() {
