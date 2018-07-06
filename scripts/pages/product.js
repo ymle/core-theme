@@ -4,7 +4,9 @@
         templateName: 'modules/product/product-detail',
         additionalEvents: {
             "change [data-mz-product-option]": "onOptionChange",
-            "change [data-mz-value='quantity']": "onQuantityChange"
+            "blur [data-mz-product-option]": "onOptionChange",
+            "change [data-mz-value='quantity']": "onQuantityChange",
+            "keyup input[data-mz-value='quantity']": "onQuantityChange"
         },
         render: function () {
             var me = this;
@@ -17,7 +19,7 @@
             return this.configure($(e.currentTarget));
         },
         onQuantityChange: _.debounce(function (e) {
-            var $qField = $(e.target),
+            var $qField = $(e.currentTarget),
               newQuantity = parseInt($qField.val(), 10);
             if (!isNaN(newQuantity)) {
                 this.model.updateQuantity(newQuantity);

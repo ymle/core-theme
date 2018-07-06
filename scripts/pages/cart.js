@@ -19,6 +19,9 @@ define(['modules/api',
 
     var CartView = Backbone.MozuView.extend({
         templateName: "modules/cart/cart-table",
+        additionalEvents: {
+            "change [data-mz-quantity]": "updateQuantity"
+        },
         initialize: function () {
             this.pickerDialog = this.initializeStorePickerDialog();
 
@@ -86,9 +89,14 @@ define(['modules/api',
                 return false;
             }
             var $removeButton = $(e.currentTarget),
-                id = $removeButton.data('mz-cart-item');
-            this.model.removeItem(id);
-            this.render();
+                id = $removeButton.data('mz-cart-item'),
+                self = this;
+            this.model.removeItem(id).then(function(){
+                self.model.get('items').remove(id);
+                self.render();
+            });
+            
+            
             return false;
         },
         empty: function() {
