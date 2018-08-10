@@ -127,7 +127,7 @@
         <div class="mz-l-formfieldgroup-cell">
         </div>
         <div class="mz-l-formfieldgroup-cell">
-            <div class="apple-pay-button apple-pay-button-black" role="button" width="200px" style="display: none" id="applePayButton"></div>
+            <div class="apple-pay-button" role="button" width="200px" style="display: none" id="applePayButton"></div>
         </div>
         </div>
     </div>
