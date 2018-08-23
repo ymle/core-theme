@@ -55,8 +55,8 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels) {
               self.session.onvalidatemerchant = function(event){
                   var validationURL = event.validationURL;
 
-                  applePayToken.domain = window.location.hostname;
-                  applePayToken.storeName = self.storeName;
+                  applePayToken.set('domain', window.location.hostname);
+                  applePayToken.set('storeName', self.storeName);
                   applePayToken.apiGetSession().then(function(response){
                     console.log(response);
                     self.session.completeMerchantValidation(response);
