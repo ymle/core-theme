@@ -54,31 +54,31 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels) {
               // set handlers. These all get called by apple.
               self.session.onvalidatemerchant = function(event){
                   var validationURL = event.validationURL;
-                  //TODO: replace this with api call
-                  /*
+
                   applePayToken.domain = window.location.hostname;
                   applePayToken.storeName = self.storeName;
-                  applePayToken.apiGetSession().then(function(){
+                  applePayToken.apiGetSession().then(function(response){
+                    console.log(response);
                     self.session.completeMerchantValidation(response);
                   }, function(error){
                       //TODO: make sure api handles and returns this error appropriately
                       console.log(error);
                   });
-                  */
 
-                  $.ajax({
-                      type: 'POST',
-                      url: 'https://shelkeller.ngrok.io/merchant-session/new?validationURL='+validationURL+'&domainName='+window.location.hostname,
-                      dataType: 'json',
-                      contentType: 'application/json',
-                      success: function(response){
-                          console.log(response);
-                          self.session.completeMerchantValidation(response);
-                      },
-                      error: function(error){
-                        console.log(error);
-                      }
-                  });
+
+                  // $.ajax({
+                  //     type: 'POST',
+                  //     url: 'https://shelkeller.ngrok.io/merchant-session/new?validationURL='+validationURL+'&domainName='+window.location.hostname,
+                  //     dataType: 'json',
+                  //     contentType: 'application/json',
+                  //     success: function(response){
+                  //         console.log(response);
+                  //         self.session.completeMerchantValidation(response);
+                  //     },
+                  //     error: function(error){
+                  //       console.log(error);
+                  //     }
+                  // });
               };
 
 
