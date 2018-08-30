@@ -9,6 +9,14 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
         'type': 'APPLEPAY'
       }
   });
+
+  var ApplePayCheckout = Backbone.MozuModel.extend({
+      mozuType: 'checkout'
+  });
+
+  var ApplePayOrder = Backbone.MozuModel.extend({
+      mozuType: 'order'
+  })
   var ApplePay = {
     init: function(style){
         var self = this;
@@ -39,10 +47,7 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
 
               //orderModel at this point could be an order OR a checkout
               console.log(orderModel);
-              this.cart.listenTo(orderModel, "thirdpartycheckoutcomplete", function(id){
-        				var checkoutUrl = this.multishipEnabled ? "/checkoutv2" : "/checkout";
-        				window.location = checkoutUrl+"/"+id;
-        			});
+
 
               var request = self.buildRequest();
               self.applePayToken = new ApplePayToken();
@@ -99,10 +104,14 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
                   //first assign the shipping contact to the orderModel
                   // then assign the cheapest shipping method
                   // then...
+
+
+                  //TODO: confirm this value is the same for multiship;
+                  var amount = self.orderModel.get('amountRemainingForPayment');
                   self.session.completeShippingContactSelection({
                     newTotal: {
                       "label": "Kibo (shipping contact selected)",
-                      "amount": "11.00",
+                      "amount": amount,
                       "type": "final"
                     },
                     newLineItems: []
@@ -111,7 +120,6 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
               self.session.onbillingcontactselected = function(event){
 
                 //first assign new billingcontact to ordermodel
-                //
 
                 self.session.completeBillingContactSelection({
                   newTotal: {
@@ -134,16 +142,35 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
                     // so we need to figure out what that will look like and how to handle it.
 
                   } else {
+                    var newPayment = {
+                        paymentType: 'token',
+                        billingInfo: {
+                            paymentToken: {
+                                id: 'id from create token call',
+                                type: 'APPLEPAY',
+                            }
+                        }
+                    };
 
+                    self.orderModel.apiCreatePayment(newPayment).then(function(response){
+                        // TODO: update status number if there's an issue with create payment
+                        self.setShippingContact().then(function(shippingContactResponse){
+                            self.setShippingMethod().then(function(shippingMethodResponse){
+                              self.setBillingContact().then(function(billingContactResponse){
+                                  self.session.completePayment({"status": status});
+                                  var id = this.orderModel.get('id');
+                                  var redirectUrl = hyprlivecontext.locals.pageContext.secureHost;
+                                  var checkoutUrl = self.multishipEnabled ? "/checkoutv2" : "/checkout";
+                                  redirectURL += checkoutUrl + '/' + id;
+                              });
+                            });
+                        });
+
+                        self.session.completePayment({"status": status});
+                        // TODO: redirect to checkout page here.
+
+                    });
                   }
-                  var newBillingInfo = {};
-                  /*
-                  self.orderModel.createPayment(newBillingInfo).then(function(response){
-                      //TODO: update status number if there's an issue with create payment
-                      self.session.completePayment("status": status);
-                  });
-                  */
-                  self.session.completePayment({"status": status});
                 });
 
 
@@ -185,12 +212,12 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
             if (this.multishipEnabled){
                 return this.cart.apiCheckout2().then(function(responseData){
                     //return responseData;
-                    return new CheckoutModels.CheckoutPage(responseData);
+                    return new ApplePayCheckout(responseData);
                 });
             } else {
                 return this.cart.apiCheckout().then(function(responseData){
                     //return responseData;
-                    return new OrderModels.CheckoutPage(responseData);
+                    return new ApplePayOrder(responseData);
                 });
             }
         } else {
@@ -198,21 +225,35 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
             // Still needs to be returned as a Promise.
         }
     },
-    setShippingContact: function(orderModel){
+    setShippingContact: function(event){
+      if (!this.isCart){
+        return Promise.resolve('no shipping contact needed');
+      }
+
+      console.log(this.applePayToken);
       var self = this,
-          fulfillmentInfo = orderModel.get("fulfillmentInfo"),
+          fulfillmentInfo = self.orderModel.get("fulfillmentInfo"),
           existingShippingMethodCode = fulfillmentInfo.shippingMethodCode,
           user = require.mozuData('user');
 
+      var appleFulfillmentData = {};
+
+          //TODO: make this clone work
+          appleFulfillmentData = fulfillmentInfo.clone();
+          appleFulfillmentData.fulfillmentContact = {
+              "address": "address from event, etc"
+          }
+
+      var appleEmail = "fromapple@me.com";
 
       if (self.isMultishipEnabled){
-        self.setShippingDestinations();
+        return self.setShippingDestinations();
       } else {
 
-        if (me.newData === null)
-            me.newData = fulfillmentInfo.data;
+        if (appleFulfillmentData === null)
+            appleFulfillmentData = fulfillmentInfo.data;
         else
-            fulfillmentInfo.data = me.newData;
+            fulfillmentInfo.data = appleFulfillmentData;
             if (user && user.email) {
                 if (!fulfillmentInfo.fulfillmentContact)
                     fulfillmentInfo.fulfillmentContact = {};
@@ -220,18 +261,20 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
                 fulfillmentInfo.fulfillmentContact.email =  user.email;
             }
             else {
-                fulfillmentInfo.fulfillmentContact = "fromapple@me.com";
+                fulfillmentInfo.fulfillmentContact.email = appleEmail;
             }
+
+            //TODO: update with api
 
       }
     },
     setShippingDestinations: function(orderModel){
-      /*apiAddDestination. then updateDestination
+      /*
+      add destination - POST  commerce/checkouts/checkoutId/destinations
+      Bulk Update Item Destinations
+      */
 
 
-add destination - POST  commerce/checkouts/checkoutId/destinations
-Bulk Update Item Destinations
-*/
         var tokenObject = self.applePayToken.get('tokenObject');
         console.log(tokenObject);
     },
