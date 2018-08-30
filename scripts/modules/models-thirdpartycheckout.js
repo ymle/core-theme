@@ -9,7 +9,7 @@ define([
 
     var ThirdPartyCheckoutPage = Backbone.MozuModel.extend({
             mozuType: 'order',
-            applePayData: null,
+            newData: null,
             handlesMessages: true,
             initialize: function (data) {
                 var self = this;
@@ -64,7 +64,7 @@ define([
                 var me = this;
                 // TODO: What's this doing?
                 if (me.get("amountRemainingForPayment") < 0) {
-                    me.trigger('applepaycheckoutcomplete', me.id);
+                    me.trigger('thirdpartycheckoutcomplete', me.id);
                     return;
                 }
                 var user = require.mozuData('user');
@@ -78,15 +78,12 @@ define([
                         },
                         "orderId" : me.id,
                         "isSameBillingShippingAddress" : false,
-                        data : {
-                            "awsData" : me.awsData
-                        }
-                    },
-                    "externalTransactionId" : me.awsData.awsReferenceId
+                    }//,
+                    //"externalTransactionId" : me.awsData.awsReferenceId
                 };
 
                 me.apiModel.createPayment(billingInfo, {silent:true}).then( function() {
-                    me.trigger('applepaycheckoutcomplete', me.id);
+                    me.trigger('thirdpartycheckoutcomplete', me.id);
                     me.isLoading(false);
                }, function(err) {
                     me.isLoading(false);
@@ -98,10 +95,10 @@ define([
                 var fulfillmentInfo = me.get("fulfillmentInfo"),
                     existingShippingMethodCode = fulfillmentInfo.shippingMethodCode;
 
-                if (me.awsData === null)
-                    me.awsData = fulfillmentInfo.data;
+                if (me.newData === null)
+                    me.newData = fulfillmentInfo.data;
                 else
-                    fulfillmentInfo.data = me.awsData;
+                    fulfillmentInfo.data = me.newData;
 
                    var user = require.mozuData('user');
                     if (user && user.email) {

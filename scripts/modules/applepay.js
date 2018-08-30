@@ -39,9 +39,13 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
 
               //orderModel at this point could be an order OR a checkout
               console.log(orderModel);
+              this.cart.listenTo(orderModel, "thirdpartycheckoutcomplete", function(id){
+        				var checkoutUrl = this.multishipEnabled ? "/checkoutv2" : "/checkout";
+        				window.location = checkoutUrl+"/"+id;
+        			});
 
               var request = self.buildRequest();
-              var applePayToken = new ApplePayToken();
+              self.applePayToken = new ApplePayToken();
 
               // define our ApplePay Session with the version number
               self.session = new ApplePaySession(3, request);
@@ -50,9 +54,9 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
               self.session.onvalidatemerchant = function(event){
                   var validationURL = event.validationURL;
 
-                  applePayToken.set('domain', window.location.hostname);
-                  applePayToken.set('storeName', self.storeName);
-                  applePayToken.apiGetSession().then(function(response){
+                  self.applePayToken.set('domain', window.location.hostname);
+                  self.applePayToken.set('storeName', self.storeName);
+                  self.applePayToken.apiGetSession().then(function(response){
                     console.log(response);
                     self.session.completeMerchantValidation(response);
                   }, function(error){
@@ -64,6 +68,9 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
 
               self.session.onpaymentmethodselected = function(event){
                   console.log(event);
+                  //TODO: we should use this time to set some aspect of the order
+                  // to applepay and update it so we can receive any apple pay related
+                  // discounts.
                   self.session.completePaymentMethodSelection(
                     {
                       newTotal: {
@@ -85,6 +92,13 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
                   //TODO:Apple expects an update to the price at this point.
                   //We should investigate what would cause that.
                   //We also need to pass an error object if there is a problem.
+
+                  //get the contact from the event?
+                  console.log('shipping contact selected');
+                  console.log(event);
+                  //first assign the shipping contact to the orderModel
+                  // then assign the cheapest shipping method
+                  // then...
                   self.session.completeShippingContactSelection({
                     newTotal: {
                       "label": "Kibo (shipping contact selected)",
@@ -94,11 +108,25 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
                     newLineItems: []
                   });
               };
+              self.session.onbillingcontactselected = function(event){
+
+                //first assign new billingcontact to ordermodel
+                //
+
+                self.session.completeBillingContactSelection({
+                  newTotal: {
+                    "label": "Kibo (billing contact selected)",
+                    "amount": "11.00",
+                    "type": "final"
+                  },
+                  newLineItems: []
+                });
+              };
               self.session.onpaymentauthorized = function(event) {
                 //event holds onto the payment token.
                 var status = 0;
-                applePayToken.set('tokenObject', event.payment.token);
-                applePayToken.apiCreate().then(function(response){
+                self.applePayToken.set('tokenObject', event.payment.token);
+                self.applePayToken.apiCreate().then(function(response){
                   if (!response.isSuccessful){
                     //TODO: Need to know how errors are going to come through.
                     // We have to set the status of the authorization manually.
@@ -108,12 +136,24 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
                   } else {
 
                   }
+                  var newBillingInfo = {};
+                  /*
+                  self.orderModel.createPayment(newBillingInfo).then(function(response){
+                      //TODO: update status number if there's an issue with create payment
+                      self.session.completePayment("status": status);
+                  });
+                  */
                   self.session.completePayment({"status": status});
                 });
 
 
               };
-              //TODO: define oncancel handler
+              self.session.oncancel = function(event){
+                //TODO:
+                /*
+                Do we need to delete the floating order? any other cleanup?
+                */
+              }
               self.session.begin();
             });
           });
@@ -144,19 +184,107 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
         if (this.isCart){
             if (this.multishipEnabled){
                 return this.cart.apiCheckout2().then(function(responseData){
-                    return responseData;
-                    //return new CheckoutModels.CheckoutPage(responseData);
+                    //return responseData;
+                    return new CheckoutModels.CheckoutPage(responseData);
                 });
             } else {
                 return this.cart.apiCheckout().then(function(responseData){
-                    return responseData;
-                    //return new OrderModels.CheckoutPage(responseData);
+                    //return responseData;
+                    return new OrderModels.CheckoutPage(responseData);
                 });
             }
         } else {
             // TODO: We're in checkout, we can get the current checkout or order object.
             // Still needs to be returned as a Promise.
         }
+    },
+    setShippingContact: function(orderModel){
+      var self = this,
+          fulfillmentInfo = orderModel.get("fulfillmentInfo"),
+          existingShippingMethodCode = fulfillmentInfo.shippingMethodCode,
+          user = require.mozuData('user');
+
+
+      if (self.isMultishipEnabled){
+        self.setShippingDestinations();
+      } else {
+
+        if (me.newData === null)
+            me.newData = fulfillmentInfo.data;
+        else
+            fulfillmentInfo.data = me.newData;
+            if (user && user.email) {
+                if (!fulfillmentInfo.fulfillmentContact)
+                    fulfillmentInfo.fulfillmentContact = {};
+
+                fulfillmentInfo.fulfillmentContact.email =  user.email;
+            }
+            else {
+                fulfillmentInfo.fulfillmentContact = "fromapple@me.com";
+            }
+
+      }
+    },
+    setShippingDestinations: function(orderModel){
+      /*apiAddDestination. then updateDestination
+
+
+add destination - POST  commerce/checkouts/checkoutId/destinations
+Bulk Update Item Destinations
+*/
+        var tokenObject = self.applePayToken.get('tokenObject');
+        console.log(tokenObject);
+    },
+    setShippingMethod: function (orderModel, existingShippingMethodCode){
+      //TODO: only do this if we haven't already selected the shipping method
+
+      var self = this;
+      orderModel.apiModel.getShippingMethods(null, {silent:true}).then(
+          function (methods) {
+
+              if (methods.length === 0) {
+                  orderModel.onCheckoutError(Hypr.getLabel("noShippingMethods"));
+              }
+
+              if (self.multishipEnabled){
+                var shippingMethods = [];
+
+                _.each(methods, function(method) {
+                    var existing = _.findWhere(orderModel.get('groupings'), {'id' : method.groupingId });
+                    var shippingRate = null;
+
+                    if (existing)
+                        shippingRate = _.findWhere(method.shippingRates, {'shippingMethodCode': existing.shippingMethodCode});
+
+                    if (!shippingRate)
+                         shippingRate = _.min(method.shippingRates, function (rate){ return rate.price;});
+
+                    shippingMethods.push({groupingId: method.groupingId, shippingRate: shippingRate});
+                });
+
+                orderModel.apiModel.setShippingMethods({id: orderModel.get('id'), postdata:shippingMethods})/*.then(function(result) {
+                    // me.applyBilling();
+                })*/;
+
+              } else {
+              var shippingMethod = "";
+              if (existingShippingMethodCode)
+                  shippingMethod = _.findWhere(methods, {shippingMethodCode: existingShippingMethodCode});
+
+              if (!shippingMethod || !shippingMethod.shippingMethodCode)
+                  shippingMethod =_.min(methods, function(method){return method.price;});
+
+              var fulfillmentInfo = orderModel.get("fulfillmentInfo");
+              fulfillmentInfo.shippingMethodCode = shippingMethod.shippingMethodCode;
+              fulfillmentInfo.shippingMethodName = shippingMethod.shippingMethodName;
+
+
+              orderModel.apiModel.update({ fulfillmentInfo: fulfillmentInfo}, {silent: true}).then(
+                  function() {
+                      orderModel.set("fulfillmentInfo", fulfillmentInfo);
+                  });
+            }
+          });
     },
     buildRequest: function(){
       /* build the request out of the store name, order total,
@@ -176,7 +304,7 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
             supportedNetworks.push(supportedCards[key].toLowerCase());
           }
       });
-        var totalAmount = 10;
+        var totalAmount = "";
         var requiredShippingContactFields = [];
         if (this.isCart){
           requiredShippingContactFields = [
@@ -187,7 +315,7 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
           ];
           totalAmount = this.cart.attributes.total;
         } else {
-          //total should be set with the checkout or order info.
+          //TODO: total should be set with the checkout or order info.
         }
         //toFixed returns a string. We are fine with that.
         var total = { label: self.storeName, amount: totalAmount.toFixed(2) };
