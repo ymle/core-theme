@@ -76,6 +76,7 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
                   //TODO: we should use this time to set some aspect of the order
                   // to applepay and update it so we can receive any apple pay related
                   // discounts.
+
                   self.session.completePaymentMethodSelection(
                     {
                       newTotal: {
@@ -120,11 +121,11 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
               self.session.onbillingcontactselected = function(event){
 
                 //first assign new billingcontact to ordermodel
-
+                var amount = self.orderModel.get('amountRemainingForPayment');
                 self.session.completeBillingContactSelection({
                   newTotal: {
                     "label": "Kibo (billing contact selected)",
-                    "amount": "11.00",
+                    "amount": amount,
                     "type": "final"
                   },
                   newLineItems: []
@@ -155,20 +156,16 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
                     self.orderModel.apiCreatePayment(newPayment).then(function(response){
                         // TODO: update status number if there's an issue with create payment
                         self.setShippingContact().then(function(shippingContactResponse){
-                            self.setShippingMethod().then(function(shippingMethodResponse){
-                              self.setBillingContact().then(function(billingContactResponse){
-                                  self.session.completePayment({"status": status});
-                                  var id = this.orderModel.get('id');
-                                  var redirectUrl = hyprlivecontext.locals.pageContext.secureHost;
-                                  var checkoutUrl = self.multishipEnabled ? "/checkoutv2" : "/checkout";
-                                  redirectURL += checkoutUrl + '/' + id;
-                              });
-                            });
+                          self.setShippingMethod().then(function(shippingMethodResponse){
+                            self.setBillingContact().then(function(billingContactResponse){
+                              self.session.completePayment({"status": status});
+                              var id = this.orderModel.get('id');
+                              var redirectUrl = hyprlivecontext.locals.pageContext.secureHost;
+                              var checkoutUrl = self.multishipEnabled ? "/checkoutv2" : "/checkout";
+                              redirectURL += checkoutUrl + '/' + id;
+                          });
                         });
-
-                        self.session.completePayment({"status": status});
-                        // TODO: redirect to checkout page here.
-
+                      });
                     });
                   }
                 });
@@ -221,6 +218,11 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
                 });
             }
         } else {
+            if (this.isMultishipEnabled){
+                return Promise.resolve(new ApplePayCheckout(window.checkout));
+            } else {
+                return Promise.resolve(new ApplePayOrder(window.order));
+            }
             // TODO: We're in checkout, we can get the current checkout or order object.
             // Still needs to be returned as a Promise.
         }
@@ -239,7 +241,7 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
       var appleFulfillmentData = {};
 
           //TODO: make this clone work
-          appleFulfillmentData = fulfillmentInfo.clone();
+          appleFulfillmentData = fulfillmentInfo.clone() || {};
           appleFulfillmentData.fulfillmentContact = {
               "address": "address from event, etc"
           }
@@ -265,6 +267,8 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
             }
 
             //TODO: update with api
+            //orderModel.apiModel.updateShippingInfo?
+            return self.orderModel.apiModel.updateShippingInfo(fulfillmentInfo,  { silent: true });
 
       }
     },
@@ -305,7 +309,7 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
                     shippingMethods.push({groupingId: method.groupingId, shippingRate: shippingRate});
                 });
 
-                orderModel.apiModel.setShippingMethods({id: orderModel.get('id'), postdata:shippingMethods})/*.then(function(result) {
+                return orderModel.apiModel.setShippingMethods({id: orderModel.get('id'), postdata:shippingMethods})/*.then(function(result) {
                     // me.applyBilling();
                 })*/;
 
@@ -322,7 +326,7 @@ function($, EventBus, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutMod
               fulfillmentInfo.shippingMethodName = shippingMethod.shippingMethodName;
 
 
-              orderModel.apiModel.update({ fulfillmentInfo: fulfillmentInfo}, {silent: true}).then(
+              return orderModel.apiModel.update({ fulfillmentInfo: fulfillmentInfo}, {silent: true}).then(
                   function() {
                       orderModel.set("fulfillmentInfo", fulfillmentInfo);
                   });
