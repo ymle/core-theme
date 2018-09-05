@@ -6,7 +6,9 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
   var ApplePayToken = Backbone.MozuModel.extend({
       mozuType: 'token',
       defaults: {
-        'type': 'APPLEPAY'
+        //this needs to be camel case for the session fetch.
+        //for the token fetch, we toUpperCase() it in the sdk.
+        'type': 'ApplePay'
       }
   });
   var ApplePayCheckout = Backbone.MozuModel.extend({ mozuType: 'checkout'});
