@@ -67,17 +67,17 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                   self.applePayToken.set('storeName', self.storeName);
                   var payload = self.applePayToken.getSessionPayload();
                   self.applePayToken.apiExecute(payload).then(function(response){
-                    console.log(response);
+                    //console.log(response);
                     self.session.completeMerchantValidation(response);
                   }, function(error){
                       //TODO: make sure api handles and returns this error appropriately
-                      console.log(error);
+                      //console.log(error);
                   });
               };
 
 
               self.session.onpaymentmethodselected = function(event){
-                  console.log(event);
+                  //console.log(event);
                   //TODO: we should use this time to set some aspect of the order
                   // to applepay and update it so we can receive any apple pay related
                   // discounts.
@@ -245,7 +245,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                     //return responseData;
                     return new ApplePayCheckout(responseData.data);
                 }, function(error){
-                  console.log(error);
+                  ////console.log(error);
                 });
             } else {
                 return this.cart.apiCheckout().then(function(responseData){
@@ -370,7 +370,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
               fulfillmentInfo.shippingMethodCode = shippingMethod.shippingMethodCode;
               fulfillmentInfo.shippingMethodName = shippingMethod.shippingMethodName;
 
-              console.log(self.orderModel.get('fulfillmentInfo'));
+              ////console.log(self.orderModel.get('fulfillmentInfo'));
               return self.orderModel.apiModel.updateShippingInfo(fulfillmentInfo,  { silent: true });
               // .then(
               //     function() {
