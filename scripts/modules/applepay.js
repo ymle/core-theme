@@ -9,6 +9,12 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         //this needs to be camel case for the session fetch.
         //for the token fetch, we toUpperCase() it in the sdk.
         'type': 'ApplePay'
+      },
+      getSessionPayload: function(){
+        var self = this;
+        var body = { domain: self.get('domain'), storeName: self.get('storeName') };
+        var payload = {cardType: self.get('type'), methodName: "Session", body: body };
+        return payload;
       }
   });
   var ApplePayCheckout = Backbone.MozuModel.extend({ mozuType: 'checkout'});
@@ -59,7 +65,8 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
 
                   self.applePayToken.set('domain', window.location.hostname);
                   self.applePayToken.set('storeName', self.storeName);
-                  self.applePayToken.apiGetSession().then(function(response){
+                  var payload = self.applePayToken.getSessionPayload();
+                  self.applePayToken.apiExecute(payload).then(function(response){
                     console.log(response);
                     self.session.completeMerchantValidation(response);
                   }, function(error){
