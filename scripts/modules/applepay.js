@@ -427,7 +427,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
           ];
         }
         //toFixed returns a string. We are fine with that.
-        totalAmount = self.orderModel.get('amountRemainingForPayment');
+        var totalAmount = self.orderModel.get('amountRemainingForPayment');
         var total = { label: self.storeName, amount: totalAmount.toFixed(2) };
         var requiredBillingContactFields = [
             'postalAddress',
