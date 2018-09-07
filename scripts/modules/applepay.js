@@ -61,7 +61,8 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                       cardType: "ApplePay",
                       body: {
                           domain: window.location.hostname,
-                          storeName: self.storeName
+                          storeName: self.storeName,
+                          validationURL: validationURL
                       }
                     }).then(function(response){
                     //console.log(response);
