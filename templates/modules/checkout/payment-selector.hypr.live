@@ -125,6 +125,13 @@
                 {% endwith %}
 				{% endif %}
             {% endfor %}
+          <div class="mz-l-formfieldgroup-row mz-paymentselector-externalworkflows">
+              <div class="mz-l-formfieldgroup-cell">
+              </div>
+              <div class="mz-l-formfieldgroup-cell">
+                  <div class="apple-pay-button" role="button" width="200px" style="display: none" id="applePayButton"></div>
+              </div>
+          </div>
         {% endif %}
     {% endwith %}
     <div class="mz-l-formfieldgroup-row mz-paymentselector-validation">

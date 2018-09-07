@@ -258,7 +258,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                 deferred.resolve(ApplePayCheckout.fromCurrent());
                 return deferred.promise;
             } else {
-                deferred.resolve(ApplePayOrder.fromCurrent());
+                deferred.resolve(new ApplePayOrder(require.mozuData('checkout')));
                 return deferred.promise;
             }
         }
