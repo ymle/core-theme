@@ -9,12 +9,6 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         //this needs to be camel case for the session fetch.
         //for the token fetch, we toUpperCase() it in the sdk.
         'type': 'ApplePay'
-      },
-      getSessionPayload: function(){
-        var self = this;
-        var body = { domain: self.get('domain'), storeName: self.get('storeName') };
-        var payload = {cardType: self.get('type'), methodName: "Session", body: body };
-        return payload;
       }
   });
   var ApplePayCheckout = Backbone.MozuModel.extend({ mozuType: 'checkout'});
@@ -62,11 +56,14 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
               // set handlers. These all get called by apple.
               self.session.onvalidatemerchant = function(event){
                   var validationURL = event.validationURL;
-
-                  self.applePayToken.set('domain', window.location.hostname);
-                  self.applePayToken.set('storeName', self.storeName);
-                  var payload = self.applePayToken.getSessionPayload();
-                  self.applePayToken.apiExecute(payload).then(function(response){
+                  self.applePayToken.apiModel.thirdPartyPaymentExecute({
+                      methodName: "Session",
+                      cardType: "ApplePay",
+                      body: {
+                          domain: window.location.hostname,
+                          storeName: self.storeName
+                      }
+                    }).then(function(response){
                     //console.log(response);
                     self.session.completeMerchantValidation(response);
                   }, function(error){
@@ -81,7 +78,6 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                   //TODO: we should use this time to set some aspect of the order
                   // to applepay and update it so we can receive any apple pay related
                   // discounts.
-
                   var amount = self.orderModel.get('amountRemainingForPayment');
                   self.session.completePaymentMethodSelection(
                     {
@@ -123,7 +119,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                 self.session.completeBillingContactSelection({
                   newTotal: {
                     "label": self.storeName,
-                    "amount": amount+"",
+                    "amount": amount,
                     "type": "final"
                   },
                   newLineItems: []
