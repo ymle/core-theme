@@ -255,10 +255,10 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         } else {
           var deferred = Api.defer();
             if (this.multishipEnabled){
-                deferred.resolve(new ApplePayCheckout(window.checkout));
+                deferred.resolve(ApplePayCheckout.fromCurrent());
                 return deferred.promise;
             } else {
-                deferred.resolve(new ApplePayCheckout(window.order));
+                deferred.resolve(ApplePayOrder.fromCurrent());
                 return deferred.promise;
             }
         }
@@ -408,7 +408,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
             supportedNetworks.push(supportedCards[key].toLowerCase());
           }
       });
-        var totalAmount = "";
+
         var requiredShippingContactFields = [];
         if (this.isCart){
           requiredShippingContactFields = [
@@ -417,11 +417,17 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
             "phone",
             "email"
           ];
-          totalAmount = this.cart.attributes.total;
         } else {
-          //TODO: total should be set with the checkout or order info.
+          //If we aren't in express checkout, we don't need to get shipping info
+          //however, for some reason, you can only get email and phone number
+          //on the apple shipping contact fields - not their billing contact fields
+          requiredShippingContactFields = [
+              "phone",
+              "email"
+          ];
         }
         //toFixed returns a string. We are fine with that.
+        totalAmount = self.orderModel.get('amountRemainingForPayment');
         var total = { label: self.storeName, amount: totalAmount.toFixed(2) };
         var requiredBillingContactFields = [
             'postalAddress',
