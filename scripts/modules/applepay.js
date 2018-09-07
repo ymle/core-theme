@@ -1,24 +1,17 @@
-define(['modules/jquery-mozu', 'hyprlive' ,"modules/api",'hyprlivecontext','underscore', "modules/backbone-mozu", 'modules/models-cart', 'modules/checkout/models-checkout-page', 'modules/models-checkout'
+define(['modules/jquery-mozu', 'hyprlive' ,"modules/api",'hyprlivecontext','underscore', "modules/backbone-mozu", 'modules/models-cart', 'modules/checkout/models-checkout-page', 'modules/models-checkout', 'modules/models-token'
 ],
-function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels, OrderModels) {
+function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels, OrderModels, TokenModels) {
   var apiContext = require.mozuData('apicontext');
   var ApplePaySession = window.ApplePaySession;
-  var ApplePayToken = Backbone.MozuModel.extend({
-      mozuType: 'token',
-      defaults: {
-        //this needs to be camel case for the session fetch.
-        //for the token fetch, we toUpperCase() it in the sdk.
-        'type': 'ApplePay'
-      }
-  });
+  var ApplePayToken = new TokenModels.Token({ type: 'APPLEPAY' });
   var ApplePayCheckout = Backbone.MozuModel.extend({ mozuType: 'checkout'});
   var ApplePayOrder = Backbone.MozuModel.extend({ mozuType: 'order' });
   var ApplePay = {
     init: function(style){
         var self = this;
-        var paymentSettings = _.findWhere(hyprlivecontext.locals.siteContext.checkoutSettings.externalPaymentWorkflowSettings, {"name" : "ApplePay"});
-        /*if (!paymentSettings || !paymentSettings.isEnabled) return;
-        this.isEnabled = paymentSettings.isEnabled;*/
+        var paymentSettings = _.findWhere(hyprlivecontext.locals.siteContext.checkoutSettings.externalPaymentWorkflowSettings, {"name" : "APPLEPAY"});
+        if (!paymentSettings || !paymentSettings.isEnabled) return;
+        this.isEnabled = paymentSettings.isEnabled;
         this.isEnabled = true;
         this.isCart = window.location.href.indexOf("cart") > 0;
         this.multishipEnabled = hyprlivecontext.locals.siteContext.generalSettings.isMultishipEnabled;
@@ -183,17 +176,27 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                         self.orderModel.apiCreatePayment(payload).then(function(order){
                           self.orderModel.set(order.data);
                           self.setShippingContact(appleShippingContact).then(function(shippingContactResponse){
-                            if (shippingContactResponse.data) self.orderModel.set('fulfillmentInfo', shippingContactResponse.data);
+                            //TODO: figure out response appearance in non express checkout
+                            if (shippingContactResponse && !self.multishipEnabled) {
+                              // If we're in singleship, the response is some fulfillmentInfo data.
+                              self.orderModel.set('fulfillmentInfo', shippingContactResponse.data);
+                            } else if (shippingContactResponse && self.multishipEnabled) {
+                              // If we're in multiship, the response is a whole new order object
+                              // loaded with destinations.
+                              self.orderModel.set(shippingContactResponse);
+                            }
                             self.setShippingMethod().then(function(shippingMethodResponse){
-                                self.orderModel.set(shippingMethodResponse.data);
-                                self.session.completePayment({"status": status});
-                                var id = self.orderModel.get('id');
-                                var redirectUrl = hyprlivecontext.locals.pageContext.secureHost;
-                                var checkoutUrl = self.multishipEnabled ? "/checkoutv2" : "/checkout";
-                                redirectUrl += checkoutUrl + '/' + id;
-                                window.location.href = redirectUrl;
+                                  self.orderModel.set(shippingMethodResponse.data);
+                                  self.session.completePayment({"status": status});
+                                  var id = self.orderModel.get('id');
+                                  var redirectUrl = hyprlivecontext.locals.pageContext.secureHost;
+                                  var checkoutUrl = self.multishipEnabled ? "/checkoutv2" : "/checkout";
+                                  redirectUrl += checkoutUrl + '/' + id;
+                                  window.location.href = redirectUrl;
                           }, function(shippingMethodError){
-                              //TODO: error handling
+                            //errored status
+                                self.session.completePayment({"status": 1});
+                                //TODO: void the payment
                           });
                         });
                     }, function(createPaymentError){
@@ -374,7 +377,11 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
               //         self.orderModel.set("fulfillmentInfo", fulfillmentInfo);
               //     });
             }
-          });
+          }
+          // , function(shippingMethodError){
+          //
+          // }
+        );
     },
     getItemIds: function(){
       var self = this;
