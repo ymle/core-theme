@@ -3,7 +3,6 @@ define(['modules/jquery-mozu', 'hyprlive' ,"modules/api",'hyprlivecontext','unde
 function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels, OrderModels, TokenModels) {
   var apiContext = require.mozuData('apicontext');
   var ApplePaySession = window.ApplePaySession;
-  var ApplePayToken = new TokenModels.Token({ type: 'APPLEPAY' });
   var ApplePayCheckout = Backbone.MozuModel.extend({ mozuType: 'checkout'});
   var ApplePayOrder = Backbone.MozuModel.extend({ mozuType: 'order' });
   var ApplePay = {
@@ -36,7 +35,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
               //orderModel at this point could be an order OR a checkout
               self.orderModel = orderModel;
               var request = self.buildRequest();
-              self.applePayToken = new ApplePayToken();
+              self.applePayToken = new TokenModels.Token({ type: 'APPLEPAY' });
 
               // define our ApplePay Session with the version number.
               // then we define a set of handlers.
