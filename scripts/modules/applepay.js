@@ -28,7 +28,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         */
         if (ApplePaySession && ApplePaySession.canMakePayments()){
           self.getOrder().then(function(orderModel){
-
+            console.log(orderModel);
             $("#applePayButton").show();
             $("#applePayButton").on('click', function(event){
 

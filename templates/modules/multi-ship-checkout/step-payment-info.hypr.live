@@ -74,7 +74,7 @@
             </div>
         </div>
         {% endif %}
-        
+
         {% if payment.billingInfo.paymentType|lower == "paypalexpress2" || payment.paymentType|lower  == "token"  %}
             {% if model.nonStoreCreditOrGiftCardTotal == 0%}
                 <h4 class="mz-checkout-nopaymentrequired">{{ labels.noPaymentRequired|string_format(model.remainingTotal|currency) }}</h4>
@@ -87,8 +87,12 @@
                     {%if payment.billingInfo.token.type|lower == "paywithamazon" %}
                         {% include "modules/checkout/payment-paybyamazon" with model=payment.billingInfo.billingContact%}
                     {%endif%}
+                    {% if payment.billingInfo.token.type|lower == "applepay" %}
+                      <div class = "mz-l-formfieldgroup-cell">
+                        <img width="100px" style="margin-right:7px;" src="../../resources/images/Apple_Pay_Mark.png"/>
+                      </div>
+                    {% endif %}
                 {%endif%}
-
                 {% if payment.paymentWorkflow|lower  == "paypalexpress2" %}
                 <div class="mz-l-stack-section">
                         <div class="mz-l-formfieldgroup-cell">
