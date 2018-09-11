@@ -70,7 +70,10 @@
                   {% if payment.billingInfo.token.type|lower == "paywithamazon" %}
                     <b>{{ labels.paymentMethod }}</b>: {{ labels.payWithAmazon }}
                   {% endif %}
-               {%endif%}   
+                  {% if payment.billingInfo.token.type|lower == "applepay" %}
+                    <b>{{ labels.paymentMethod }}</b>: {{ labels.applePay }}
+                  {% endif %}
+               {%endif%}
                {% if payment.billingInfo.paymentType == "StoreCredit" %}
                   <small>{{ labels.digitalCreditCode }}</small>
                   <div>{{ payment.billingInfo.storeCreditCode }}</div>

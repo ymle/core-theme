@@ -60,6 +60,9 @@
                             {%if payment.billingInfo.token.type|lower == "paywithamazon" %}
                                <b>{{ labels.paymentMethod }}</b>: {{ labels.payWithAmazon }}
                             {%endif%}
+                            {%if payment.billingInfo.token.type|lower == "applepay" %}
+                               <b>{{ labels.paymentMethod }}</b>: {{ labels.applePay }}
+                            {%endif%}
                         {% endif %}
                     {% endif %}
                     {% endfor %}

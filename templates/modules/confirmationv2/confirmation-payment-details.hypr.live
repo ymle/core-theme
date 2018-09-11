@@ -44,7 +44,7 @@
                        <dd><img src="../../resources/images/amazonpay60x38.png"/></dd>
                     {%endif%}
                     {% if model.billingInfo.token.type|lower == "applepay" %}
-                    <dd><img width="100px" src="../../resources/images/Apple_Pay_Mark.png"/></dd>
+                        <dd><img width="100px" src="../../resources/images/Apple_Pay_Mark.png"/></dd>
                     {% endif %}
                 {%endif%}
                 {% if model.billingInfo.paymentType|lower == "paypalexpress2" %}
