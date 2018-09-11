@@ -247,6 +247,11 @@
                                                 {% endif %}
                                                 {% if payment.paymentType|lower == "paywithamazon" %}
                                                     {{ labels.payWithAmazon }}
+                                                {%endif%}
+                                                {% if payment.paymentType|lower == "token"%}
+                                                    {%if payment.billingInfo.token.type|lower == "paywithamazon" %}
+                                                        {{ labels.payWithAmazon }}
+                                                    {% endif %}
                                                 {% else %}
                                                     {{ payment.paymentType }}
                                                 {% endif %}

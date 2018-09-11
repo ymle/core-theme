@@ -43,7 +43,8 @@ var CheckoutStepView = EditableView.extend({
         },
         amazonShippingAndBilling: function() {
             var payments = window.order.get('payments');
-            var amazonpayment= _.findWhere(payments, {'paymentType' : 'PayWithAmazon'});
+            var amazonpayment= _.findWhere(payments, {'paymentType' : 'token'});
+            
             
             window.location = "/checkoutV2/"+window.order.id+"?isAwsCheckout=true&access_token="+amazonpayment.data.awsData.addressAuthorizationToken+"&view="+AmazonPay.viewName;
         },

@@ -74,7 +74,8 @@
             </div>
         </div>
         {% endif %}
-        {% if payment.billingInfo.paymentType|lower == "paypalexpress2" || payment.paymentWorkflow|lower  == "paywithamazon"  %}
+        
+        {% if payment.billingInfo.paymentType|lower == "paypalexpress2" || payment.paymentType|lower  == "token"  %}
             {% if model.nonStoreCreditOrGiftCardTotal == 0%}
                 <h4 class="mz-checkout-nopaymentrequired">{{ labels.noPaymentRequired|string_format(model.remainingTotal|currency) }}</h4>
             {% endif %}
@@ -82,9 +83,12 @@
                {%if model.isExternalCheckoutFlowComplete%}
                 <a class="mz-checkout-payment-change" href="javascript:;" data-mz-action="cancelExternalCheckout">{{ labels.remove }} </a>
                {% endif %}
-               {%if payment.paymentWorkflow|lower  == "paywithamazon" %}
-                  {% include "modules/checkout/payment-paybyamazon" with model=payment.billingInfo.billingContact%}
+                {% if payment.paymentType|lower == "token"%}
+                    {%if payment.billingInfo.token.type|lower == "paywithamazon" %}
+                        {% include "modules/checkout/payment-paybyamazon" with model=payment.billingInfo.billingContact%}
+                    {%endif%}
                 {%endif%}
+
                 {% if payment.paymentWorkflow|lower  == "paypalexpress2" %}
                 <div class="mz-l-stack-section">
                         <div class="mz-l-formfieldgroup-cell">

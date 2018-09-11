@@ -66,8 +66,10 @@
                {% if  payment.billingInfo.paymentType|lower == "paypalexpress2"  %}
                  <b>{{ labels.paymentMethod }}</b>: {{ labels.paypalExpress }}
                {% endif %}
-               {% if payment.billingInfo.paymentType|lower == "PayWithAmazon" %}
+               {% if payment.paymentType|lower == "token" %}
+                  {% if payment.billingInfo.token.type|lower == "paywithamazon" %}
                     <b>{{ labels.paymentMethod }}</b>: {{ labels.payWithAmazon }}
+                  {% endif %}
                {%endif%}   
                {% if payment.billingInfo.paymentType == "StoreCredit" %}
                   <small>{{ labels.digitalCreditCode }}</small>

@@ -20,10 +20,12 @@
             <div>{{ model.billingInfo.billingContact.email }}</div>
         </div>
     {% endif %}
-    {% if model.billingInfo.paymentType == "StoreCredit" or model.billingInfo.paymentType == "GiftCard" or model.billingInfo.paymentType|lower == "paypalexpress2" or model.billingInfo.paymentType == "PayWithAmazon"%}
+    {% if model.billingInfo.paymentType == "StoreCredit" or model.billingInfo.paymentType == "GiftCard" or model.billingInfo.paymentType|lower == "paypalexpress2" or model.paymentType|lower == "token"%}
         <dt>Payment Method</dt>
-        {% if model.billingInfo.paymentType|lower == "paywithamazon" %}
-            <dd><img src="../../resources/images/amazonpay60x38.png"/></dd>
+        {% if model.paymentType|lower == "token"%}
+            {%if model.billingInfo.token.type|lower == "paywithamazon" %}
+                <dd><img src="../../resources/images/amazonpay60x38.png"/></dd>
+            {%endif%}
         {%endif%}
         {% if model.billingInfo.paymentType|lower == "paypalexpress2" %}
             <dd>

@@ -3,14 +3,15 @@ define([
     "underscore",
     "modules/backbone-mozu",
     "modules/api",
-    "hyprlivecontext",
-    "hyprlive"
-],function ($, _, Backbone, api, HyprLiveContext, Hypr) {
+    "hyprlive",
+    "modules/models-token"
+],function ($, _, Backbone, api, Hypr, TokenModel) {
 
     var AwsCheckoutPage = Backbone.MozuModel.extend({
             mozuType: 'order',
             awsData: null,
             handlesMessages: true,
+            tokenDetails : null,
             initialize: function (data) {
                 var self = this;
                 _.bindAll(this, "submit");
@@ -67,22 +68,25 @@ define([
                     return;
                 }
                 var user = require.mozuData('user');
+                var billingContact = me.tokenDetails.billingContact || {};
+                billingContact.email = (user.email !== "" ? user.email : me.get("fulfillmentInfo").fulfillmentContact.email);
+
                  var billingInfo = {
                     "newBillingInfo" : 
                     {   
-                        "paymentType": "PayWithAmazon",
-                        "paymentWorkflow": "PayWithAmazon",
                         "card" : null,
-                        "billingContact" : {
-                            "email": (user.email !== "" ? user.email : me.get("fulfillmentInfo").fulfillmentContact.email)
-                        },
+                        "billingContact" : billingContact,
                         "orderId" : me.id,
                         "isSameBillingShippingAddress" : false,
+                        "paymentType": "token",
+                        "token": {
+                            "paymentServiceTokenId": me.awsData.id,
+                            "type": "PAYWITHAMAZON"
+                           },
                         data : {
                             "awsData" : me.awsData
                         }
-                    },
-                    "externalTransactionId" : me.awsData.awsReferenceId
+                    }
                 };
 
                 me.apiModel.createPayment(billingInfo, {silent:true}).then( function() {
@@ -103,24 +107,33 @@ define([
                 else 
                     fulfillmentInfo.data = me.awsData;
 
-                   var user = require.mozuData('user');
-                    if (user && user.email) {
-                        if (!fulfillmentInfo.fulfillmentContact)
-                            fulfillmentInfo.fulfillmentContact = {};
+                var payWithAmazonToken = new TokenModel.Token({ type: 'PAYWITHAMAZON' });
+                payWithAmazonToken.set('tokenObject', me.awsData);
+                payWithAmazonToken.apiCreate().then(function(response){
+                    me.awsData.id = response.id;
 
-                        fulfillmentInfo.fulfillmentContact.email =  user.email; 
-                    }
-                    else {
-                        fulfillmentInfo.fulfillmentContact = null;
-                    }
+                    payWithAmazonToken.apiModel.thirdPartyPaymentExecute({
+                        methodName: "tokenDetails",
+                        cardType: "PAYWITHAMAZON",
+                        body: null,
+                        tokenId: response.id
+                    }).then(function(details) {
+                        console.log(details);
+                        me.tokenDetails = details;
 
-                me.apiModel.updateShippingInfo(fulfillmentInfo, { silent: true }).then(function(result) {
-                    me.set("fulfillmentInfo",result.data);
-                    //me.isLoading(false);
-                    if (me.apiModel.data.requiresFulfillmentInfo)
-                        me.applyShippingMethods(existingShippingMethodCode);
-                    else
-                        me.applyBilling();
+                        var shipping = details.shippingContact;
+                        var user = require.mozuData('user');
+                        if (user && user.email)
+                            shipping.email =  user.email; 
+
+                        me.apiModel.updateShippingInfo({fulfillmentContact : shipping, data: me.awsData}, { silent: true }).then(function(result) {
+                            me.set("fulfillmentInfo",result.data);
+                            if (me.apiModel.data.requiresFulfillmentInfo)
+                                me.applyShippingMethods(existingShippingMethodCode);
+                            else
+                                me.applyBilling();
+                        });
+                    });
                 });
             },
              onCheckoutError: function (msg) {

@@ -3,13 +3,14 @@ define([
     "underscore",
     "modules/backbone-mozu",
     "modules/api",
-    "hyprlivecontext",
-    "hyprlive"
-],function ($, _, Backbone, api, HyprLiveContext, Hypr) {
+    "hyprlive",
+    "modules/models-token"
+],function ($, _, Backbone, api,  Hypr,TokenModel) {
 
     var AwsCheckoutPage = Backbone.MozuModel.extend({
             mozuType: 'checkout',
             awsData: null,
+            tokenDetails : null,
             handlesMessages: true,
             defaults: {
                 overrideItemDestinations: false
@@ -107,22 +108,25 @@ define([
                 }
                 var awsDestination = me.getAwsDestination();
                 var user = require.mozuData('user');
+                var billingContact = me.tokenDetails.billingContact || {};
+                billingContact.email = (user.email !== "" ? user.email : awsDestination.destinationContact.email);
+
                  var billingInfo = {
                     "newBillingInfo" : 
                     {   
-                        "paymentType": "PayWithAmazon",
-                        "paymentWorkflow": "PayWithAmazon",
                         "card" : null,
-                        "billingContact" : {
-                            "email": (user.email !== "" ? user.email : awsDestination.email)
-                        },
+                        "billingContact" : billingContact,
                         "orderId" : me.id,
                         "isSameBillingShippingAddress" : false,
+                        "paymentType": "token",
+                        "token": {
+                            "paymentServiceTokenId": me.awsData.id,
+                            "type": "PAYWITHAMAZON"
+                           },
                         data : {
-                            "awsData" : awsDestination.data
+                            "awsData" : me.awsData
                         }
-                    },
-                    "externalTransactionId" : awsDestination.data.awsReferenceId
+                    }
                 };
 
                 me.apiModel.createPayment(billingInfo).then( function() {
@@ -142,21 +146,38 @@ define([
                 me.isLoading(true);
                 
                 var awsDestination = me.getAwsDestination();
-                var user = require.mozuData('user');
+                if (me.awsData === null)
+                    me.awsData = awsDestination.data;
 
-                if (user && user.email) 
-                    awsDestination.destinationContact= {email: user.email}; 
-                else 
-                    awsDestination.destinationContact = null;
+                var payWithAmazonToken = new TokenModel.Token({ type: 'PAYWITHAMAZON' });
+                payWithAmazonToken.set('tokenObject', me.awsData);
+                payWithAmazonToken.apiCreate().then(function(response){
+                    me.awsData.id = response.id;
 
-                
-                if (me.get('overrideItemDestinations')) {
-                    me.apiModel.unsetAllShippingDestinations().then(function(result){
-                        me.setShippingDestination(awsDestination);
-                    });    
-                } else
-                    me.setShippingDestination(awsDestination);
-                
+                    payWithAmazonToken.apiModel.thirdPartyPaymentExecute({
+                        methodName: "tokenDetails",
+                        cardType: "PAYWITHAMAZON",
+                        body: null,
+                        tokenId: response.id
+                    }).then(function(details) {
+                        console.log(details);
+                        me.tokenDetails = details;
+
+                        
+                        var user = require.mozuData('user');
+
+                        awsDestination.destinationContact = details.shippingContact;
+                        if (user && user.email) 
+                            awsDestination.destinationContact.email = user.email; 
+                        
+                        if (me.get('overrideItemDestinations')) {
+                            me.apiModel.unsetAllShippingDestinations().then(function(result){
+                                me.setShippingDestination(awsDestination);
+                            });    
+                        } else
+                            me.setShippingDestination(awsDestination);
+                    });
+                });
             },
              onCheckoutError: function (msg) {
                 var me = this,
