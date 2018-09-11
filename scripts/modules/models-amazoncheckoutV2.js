@@ -64,7 +64,7 @@ define([
                         if (methods.length === 0) {
                             me.onCheckoutError(Hypr.getLabel("awsNoShippingOptions"));
                         }
-                        
+
                         var shippingMethods = [];
 
                         _.each(methods, function(method) {
@@ -112,8 +112,8 @@ define([
                 billingContact.email = (user.email !== "" ? user.email : awsDestination.destinationContact.email);
 
                  var billingInfo = {
-                    "newBillingInfo" : 
-                    {   
+                    "newBillingInfo" :
+                    {
                         "card" : null,
                         "billingContact" : billingContact,
                         "orderId" : me.id,
@@ -144,7 +144,7 @@ define([
             submit: function() {
                 var me = this;
                 me.isLoading(true);
-                
+
                 var awsDestination = me.getAwsDestination();
                 if (me.awsData === null)
                     me.awsData = awsDestination.data;
@@ -160,20 +160,20 @@ define([
                         body: null,
                         tokenId: response.id
                     }).then(function(details) {
-                        console.log(details);
+                        window.console.log(details);
                         me.tokenDetails = details;
 
-                        
+
                         var user = require.mozuData('user');
 
                         awsDestination.destinationContact = details.shippingContact;
-                        if (user && user.email) 
-                            awsDestination.destinationContact.email = user.email; 
-                        
+                        if (user && user.email)
+                            awsDestination.destinationContact.email = user.email;
+
                         if (me.get('overrideItemDestinations')) {
                             me.apiModel.unsetAllShippingDestinations().then(function(result){
                                 me.setShippingDestination(awsDestination);
-                            });    
+                            });
                         } else
                             me.setShippingDestination(awsDestination);
                     });

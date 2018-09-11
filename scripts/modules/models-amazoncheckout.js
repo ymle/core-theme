@@ -26,19 +26,19 @@ define([
                         if (methods.length === 0) {
                             me.onCheckoutError(Hypr.getLabel("awsNoShippingOptions"));
                         }
-                        
+
                         var shippingMethod = "";
                         if (existingShippingMethodCode)
                             shippingMethod = _.findWhere(methods, {shippingMethodCode: existingShippingMethodCode});
-                        
+
                         if (!shippingMethod || !shippingMethod.shippingMethodCode)
                             shippingMethod =_.min(methods, function(method){return method.price;});
-                        
+
                         var fulfillmentInfo = me.get("fulfillmentInfo");
                         fulfillmentInfo.shippingMethodCode = shippingMethod.shippingMethodCode;
                         fulfillmentInfo.shippingMethodName = shippingMethod.shippingMethodName;
-                     
-                        
+
+
                         me.apiModel.update({ fulfillmentInfo: fulfillmentInfo}, {silent: true}).then(
                             function() {
                                 //me.isLoading (false);
@@ -72,8 +72,8 @@ define([
                 billingContact.email = (user.email !== "" ? user.email : me.get("fulfillmentInfo").fulfillmentContact.email);
 
                  var billingInfo = {
-                    "newBillingInfo" : 
-                    {   
+                    "newBillingInfo" :
+                    {
                         "card" : null,
                         "billingContact" : billingContact,
                         "orderId" : me.id,
@@ -104,7 +104,7 @@ define([
 
                 if (me.awsData === null)
                     me.awsData = fulfillmentInfo.data;
-                else 
+                else
                     fulfillmentInfo.data = me.awsData;
 
                 var payWithAmazonToken = new TokenModel.Token({ type: 'PAYWITHAMAZON' });
@@ -118,13 +118,13 @@ define([
                         body: null,
                         tokenId: response.id
                     }).then(function(details) {
-                        console.log(details);
+                        window.console.log(details);
                         me.tokenDetails = details;
 
                         var shipping = details.shippingContact;
                         var user = require.mozuData('user');
                         if (user && user.email)
-                            shipping.email =  user.email; 
+                            shipping.email =  user.email;
 
                         me.apiModel.updateShippingInfo({fulfillmentContact : shipping, data: me.awsData}, { silent: true }).then(function(result) {
                             me.set("fulfillmentInfo",result.data);
