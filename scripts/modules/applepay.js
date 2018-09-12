@@ -6,7 +6,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
   var ApplePayCheckout = Backbone.MozuModel.extend({ mozuType: 'checkout'});
   var ApplePayOrder = Backbone.MozuModel.extend({ mozuType: 'order' });
   var ApplePay = {
-    init: function(style){
+    init: function(style, cartView){
         var self = this;
         var paymentSettings = _.findWhere(hyprlivecontext.locals.siteContext.checkoutSettings.externalPaymentWorkflowSettings, {"name" : "APPLEPAY"});
         if (!paymentSettings || !paymentSettings.isEnabled) return;
@@ -16,29 +16,31 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         this.multishipEnabled = hyprlivecontext.locals.siteContext.generalSettings.isMultishipEnabled;
         this.storeName = hyprlivecontext.locals.siteContext.generalSettings.websiteName;
         if (this.isCart){
-          this.cart = CartModels.Cart.fromCurrent();
+            this.cart = new CartModels.Cart(cartView.model);
         }
         // configure button with selected style and language
         this.setStyle(style);
         this.setLanguage();
+
         /*
           canMakePayments passes if:
           - the user is on the most recent version of Safari on OSX sierra or a recent iPad
-          - the user has a wallet set up on an iPhone (must be iPhone - not iPad)
+          - the user has a wallet set up on a logged-in, up-to-date iPhone (must be iPhone - not iPad)
         */
+
         if (ApplePaySession && ApplePaySession.canMakePayments()){
           self.getOrder().then(function(orderModel){
             //console.log(orderModel);
             $("#applePayButton").show();
             $("#applePayButton").on('click', function(event){
 
-              //orderModel at this point could be an order OR a checkout
+              //orderModel is either an ApplePayCheckout or ApplePayOrder
               self.orderModel = orderModel;
               var request = self.buildRequest();
-              self.applePayToken = new TokenModels.Token({ type: 'APPLEPAY' });
+              self.applePayToken = new TokenModels.Token({ type: 'applePay' });
 
-              // define our ApplePay Session with the version number.
-              // then we define a set of handlers.
+              // first define our ApplePay Session with the version number.
+              // then we define a set of handlers that get called by apple.
               // after our session object knows how to respond to apple's various events,
               // we call begin(). The merchant is then validated, initializing
               // the 'true' session.
@@ -57,20 +59,19 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                           validationURL: validationURL
                       }
                     }).then(function(response){
-                    //console.log(response);
+                    // When apple is finished making this call,
+                    // it opens the payment sheet and automatically selects
+                    // available cards, addresses, and contact info, which triggers
+                    // the following handlers.
                     self.session.completeMerchantValidation(response);
+
                   }, function(error){
-                      //TODO: make sure api handles and returns this error appropriately
-                      //console.log(error);
+                      self.handleError(error);
                   });
               };
 
 
               self.session.onpaymentmethodselected = function(event){
-                  //console.log(event);
-                  //TODO: we should use this time to set some aspect of the order
-                  // to applepay and update it so we can receive any apple pay related
-                  // discounts.
                   var amount = self.orderModel.get('amountRemainingForPayment');
                   self.session.completePaymentMethodSelection(
                     {
@@ -84,17 +85,11 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                   );
               };
               self.session.onshippingcontactselected = function(event) {
-                  //takes an ApplePayShippingContactUpdate object
-                  //errors [String]
-                  //newLineItems (optional)
-                  //newShippingMethods (optional?)
-                  //newTotal (required - has label, amount, and type strings)
+                  //these handlers each have a corresponding callback to apple
+                  //apple expects us to have changed the price according to
+                  //shipping costs at this point so we have to send them
+                  // a 'new' amount
 
-                  //TODO:Apple expects an update to the price at this point.
-                  //We should investigate what would cause that.
-                  //We also need to pass an error object if there is a problem.
-
-                  //TODO: confirm this value is the same for multiship;
                   var amount = self.orderModel.get('amountRemainingForPayment');
                   self.session.completeShippingContactSelection({
                     newTotal: {
@@ -105,9 +100,8 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                     newLineItems: []
                   });
               };
-              self.session.onbillingcontactselected = function(event){
 
-                //first assign new billingcontact to ordermodel
+              self.session.onbillingcontactselected = function(event){
                 var amount = self.orderModel.get('amountRemainingForPayment');
                 self.session.completeBillingContactSelection({
                   newTotal: {
@@ -118,28 +112,24 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                   newLineItems: []
                 });
               };
-
               //This handler gets called after the user authorizes the wallet payment
               //on their phone. This is when we receive the payment token from apple.
               self.session.onpaymentauthorized = function(event) {
-                var status = 0;
+                var status = 0; // This is a 'successful' status. 'failure' is 1
                 self.applePayToken.set('tokenObject', event.payment.token);
                 self.applePayToken.apiCreate().then(function(response){
                   if (!response.isSuccessful){
-                    //TODO: Need to know how errors are going to come through.
-                    // We have to set the status of the authorization manually.
-                    // We'll be getting information from the event object and/or the  if there is a problem
-                    // so we need to figure out what that will look like and how to handle it.
-
+                    self.handleError(null, "Could not create payment token.");
                   } else {
                     var appleBillingContact = event.payment.billingContact;
                     var appleShippingContact = event.payment.shippingContact;
+
                     var billingEmail = appleShippingContact.emailAddress;
-                    //TODO: use user email if they're logged in maybe?
                     var user = require.mozuData('user');
                     if (user && user.email) {
                         billingEmail = user.email;
                     }
+
                     var payload = {
                       amount: self.orderModel.get('amountRemainingForPayment'),
                       currencyCode: apiContext.headers['x-vol-currency'],
@@ -165,63 +155,76 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                           },
                           token: {
                               paymentServiceTokenId: response.id,
-                              type: 'APPLEPAY'
+                              type: 'applePay'
                           }
-
                       }
                     };
 
-                        // TODO: update status number if there's an issue with create payment
-                        self.orderModel.apiCreatePayment(payload).then(function(order){
-                          self.orderModel.set(order.data);
-                          self.setShippingContact(appleShippingContact).then(function(shippingContactResponse){
-                            //TODO: figure out response appearance in non express checkout
-                            if (shippingContactResponse && !self.multishipEnabled) {
-                              // If we're in singleship, the response is some fulfillmentInfo data.
-                              self.orderModel.set('fulfillmentInfo', shippingContactResponse.data);
-                            } else if (shippingContactResponse && self.multishipEnabled) {
-                              // If we're in multiship, the response is a whole new order object
-                              // loaded with destinations.
-                              self.orderModel.set(shippingContactResponse);
-                            }
-                            self.setShippingMethod().then(function(shippingMethodResponse){
-                                  self.orderModel.set(shippingMethodResponse.data);
-                                  self.session.completePayment({"status": status});
-                                  var id = self.orderModel.get('id');
-                                  var redirectUrl = hyprlivecontext.locals.pageContext.secureHost;
-                                  var checkoutUrl = self.multishipEnabled ? "/checkoutv2" : "/checkout";
-                                  redirectUrl += checkoutUrl + '/' + id;
-                                  window.location.href = redirectUrl;
-                          }, function(shippingMethodError){
-                            //errored status
-                                self.session.completePayment({"status": 1});
-                                //TODO: void the payment
-                          });
-                        });
-                    }, function(createPaymentError){
-                        //TODO: error handling
+                    self.orderModel.apiCreatePayment(payload).then(function(order){
+
+                      self.orderModel.set(order.data);
+                      self.setShippingContact(appleShippingContact).then(function(shippingContactResponse){
+
+                        if (shippingContactResponse && !self.multishipEnabled) {
+                          // If we're in singleship, the response is some fulfillmentInfo data.
+                          self.orderModel.set('fulfillmentInfo', shippingContactResponse.data);
+                        } else if (shippingContactResponse && self.multishipEnabled) {
+                          // If we're in multiship, the response is a whole new order object
+                          // loaded with destinations.
+                          self.orderModel.set(shippingContactResponse);
+                        }
+
+                        self.setShippingMethod().then(function(shippingMethodResponse){
+                              self.orderModel.set(shippingMethodResponse.data);
+                              self.session.completePayment({"status": status});
+                              var id = self.orderModel.get('id');
+                              var redirectUrl = hyprlivecontext.locals.pageContext.secureHost;
+                              var checkoutUrl = self.multishipEnabled ? "/checkoutv2" : "/checkout";
+                              redirectUrl += checkoutUrl + '/' + id;
+                              window.location.href = redirectUrl;
+
+                      }, function(shippingMethodError){
+                        self.handleError(shippingMethodError);
+                      });
+                    }, function(shippingContactError){
+                        self.handleError(shippingContactError);
                     });
-
-                  }
+                }, function(createPaymentError){
+                    self.handleError(createPaymentError);
                 });
-
-
-              };
-              self.session.oncancel = function(event){
-                //TODO:
-                /*
-                Do we need to delete the floating order? any other cleanup?
-                */
-              };
-              self.session.begin();
+              }
             });
+
+          };
+          //Called if the modal is closed at any point
+          self.session.oncancel = function(event){
+            var self = this;
+            var currentPayment = self.orderModel.apiModel.getCurrentPayment();
+            if (currentPayment) {
+              self.orderModel.apiVoidPayment(currentPayment.id);
+            }
+          };
+
+          self.session.begin();
+
           });
+        });
 
         } else {
           if ($("#applePayButton")){
               $("#applePayButton").hide();
           }
         }
+    },
+    handleError: function(error, message){
+      var self = this;
+      var currentPayment = self.orderModel.apiModel.getCurrentPayment();
+        self.orderModel.apiVoidPayment(currentPayment.id).ensure(function(response){
+          self.session.completePayment({"status": 1});
+          window.cartView.cartView.model.trigger('error', {
+              message: error.items[0].message || error.message || message
+          });
+        });
     },
     setStyle: function(style){
         var self = this;
@@ -309,15 +312,11 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
       }
     },
     setShippingDestinations: function(fulfillmentContact){
-      /*
-      add destination - POST  commerce/checkouts/checkoutId/destinations
-      Bulk Update Item Destinations
-      */
+        // shipping address setter for multiship.
         var self = this;
         var destinationPayload = {
-              destinationContact: fulfillmentContact
+            destinationContact: fulfillmentContact
         };
-        var itemIds = self.getItemIds();
         return self.orderModel.apiModel.addShippingDestination(destinationPayload).then(function(response){
             var destinationId = response.data.id;
             return self.orderModel.apiModel.setAllShippingDestinations({
@@ -334,7 +333,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
           function (methods) {
 
               if (methods.length === 0) {
-                  self.orderModel.onCheckoutError(Hypr.getLabel("noShippingMethods"));
+                  self.handleError(null, Hypr.getLabel("noShippingMethods"));
               }
 
               if (self.multishipEnabled){
@@ -368,27 +367,11 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
               var fulfillmentInfo = self.orderModel.get("fulfillmentInfo");
               fulfillmentInfo.shippingMethodCode = shippingMethod.shippingMethodCode;
               fulfillmentInfo.shippingMethodName = shippingMethod.shippingMethodName;
-
-              ////console.log(self.orderModel.get('fulfillmentInfo'));
               return self.orderModel.apiModel.updateShippingInfo(fulfillmentInfo,  { silent: true });
-              // .then(
-              //     function() {
-              //         self.orderModel.set("fulfillmentInfo", fulfillmentInfo);
-              //     });
+
             }
           }
-          // , function(shippingMethodError){
-          //
-          // }
         );
-    },
-    getItemIds: function(){
-      var self = this;
-      var ids = [];
-      self.orderModel.get('items').forEach(function(item){
-          ids.push(item.id);
-      });
-      return ids;
     },
     buildRequest: function(){
       /* build the request out of the store name, order total,
@@ -409,22 +392,13 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
           }
       });
 
-        var requiredShippingContactFields = [];
+        var requiredShippingContactFields = ["phone", "email"];
+        //If we aren't on the cart, we don't need to get shipping info
+        //however, for some reason, you can only get email and phone number
+        //on the apple shipping contact fields - not their billing contact fields
         if (this.isCart){
-          requiredShippingContactFields = [
-            "postalAddress",
-            "name",
-            "phone",
-            "email"
-          ];
-        } else {
-          //If we aren't in express checkout, we don't need to get shipping info
-          //however, for some reason, you can only get email and phone number
-          //on the apple shipping contact fields - not their billing contact fields
-          requiredShippingContactFields = [
-              "phone",
-              "email"
-          ];
+          requiredShippingContactFields.push("postalAddress");
+          requiredShippingContactFields.push("name");
         }
         //toFixed returns a string. We are fine with that.
         var totalAmount = self.orderModel.get('amountRemainingForPayment');
