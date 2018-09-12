@@ -81,7 +81,7 @@ define([
                         "paymentType": "token",
                         "token": {
                             "paymentServiceTokenId": me.awsData.id,
-                            "type": "PAYWITHAMAZON"
+                            "type": "PayWithAmazon"
                            },
                         data : {
                             "awsData" : me.awsData
@@ -107,18 +107,22 @@ define([
                 else
                     fulfillmentInfo.data = me.awsData;
 
-                var payWithAmazonToken = new TokenModel.Token({ type: 'PAYWITHAMAZON' });
+                var payWithAmazonToken = new TokenModel.Token({ type: 'PayWithAmazon' });
                 payWithAmazonToken.set('tokenObject', me.awsData);
                 payWithAmazonToken.apiCreate().then(function(response){
                     me.awsData.id = response.id;
 
                     payWithAmazonToken.apiModel.thirdPartyPaymentExecute({
                         methodName: "tokenDetails",
-                        cardType: "PAYWITHAMAZON",
+                        cardType: "PayWithAmazon",
                         body: null,
                         tokenId: response.id
                     }).then(function(details) {
                         window.console.log(details);
+                        if (details.error) {
+                            me.onCheckoutError(details.error.message);
+                            return;
+                        }
                         me.tokenDetails = details;
 
                         var shipping = details.shippingContact;
