@@ -176,7 +176,9 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                         }
 
                         self.setShippingMethod().then(function(shippingMethodResponse){
-                              self.orderModel.set(shippingMethodResponse.data);
+                              if (shippingMethodResponse){
+                                self.orderModel.set(shippingMethodResponse.data);
+                              }
                               self.session.completePayment({"status": status});
                               var id = self.orderModel.get('id');
                               var redirectUrl = hyprlivecontext.locals.pageContext.secureHost;
