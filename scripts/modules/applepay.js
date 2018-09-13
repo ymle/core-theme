@@ -6,7 +6,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
   var ApplePayCheckout = Backbone.MozuModel.extend({ mozuType: 'checkout'});
   var ApplePayOrder = Backbone.MozuModel.extend({ mozuType: 'order' });
   var ApplePay = {
-    init: function(style, cartView){
+    init: function(style){
         var self = this;
         var paymentSettings = _.findWhere(hyprlivecontext.locals.siteContext.checkoutSettings.externalPaymentWorkflowSettings, {"name" : "APPLEPAY"});
         if (!paymentSettings || !paymentSettings.isEnabled) return;
@@ -16,7 +16,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         this.multishipEnabled = hyprlivecontext.locals.siteContext.generalSettings.isMultishipEnabled;
         this.storeName = hyprlivecontext.locals.siteContext.generalSettings.websiteName;
         if (this.isCart){
-            this.cart = new CartModels.Cart(cartView.model);
+            this.cart = window.cartView.cartView.model;
         }
         // configure button with selected style and language
         this.setStyle(style);
@@ -32,12 +32,13 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
           self.getOrder().then(function(orderModel){
             //console.log(orderModel);
             $("#applePayButton").show();
-            $("#applePayButton").on('click', function(event){
+            //assigning our click handler to the document so it still works after re-render
+            $(document).on('click', '.apple-pay-button', function(event){
 
               //orderModel is either an ApplePayCheckout or ApplePayOrder
               self.orderModel = orderModel;
               var request = self.buildRequest();
-              self.applePayToken = new TokenModels.Token({ type: 'applePay' });
+              self.applePayToken = new TokenModels.Token({ type: 'APPLEPAY' });
 
               // first define our ApplePay Session with the version number.
               // then we define a set of handlers that get called by apple.
@@ -216,17 +217,50 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
           }
         }
     },
+    // We only want to get shipping info from the user via applePay if BOTH:
+    // 1. We are currently on the cart. When we kick the user to checkout, shipping info will be populated.
+    // 2. The cart has items that will be shipped. If it's all pickup items, we don't want to bother asking for shipping info and confuse them.
+    isShippingInfoNeeded: function(){
+        var self = this;
+        if (!self.isCart) return false;
+
+        var hasShippingItem = false;
+        var items = self.cart.get('items');
+        items.forEach(function(item){
+            if (item.get('fulfillmentMethod').toLowerCase() == "ship"){
+                hasShippingItem = true;
+            }
+        });
+        return hasShippingItem;
+    },
     handleError: function(error, message){
+      //error can be a the error object returned from a rejected promise
+      //message can be a string if you want to pass in your own
       var self = this;
-      var currentPayment = self.orderModel.apiModel.getCurrentPayment();
+      var currentPayment = self.orderModel.apiModel.getCurrentPayment() || {};
+      var errorMessage = error.message || error.items[0].message || message;
+      //this function works on both the cart page and the checkout page
+      //a model which is attached to a backbone view with a messages element defined is necessary to trigger 'error'.
+      //conveniently, we keep our cart and checkout backbone views stored on our window object.
+      var errorMessageHandler;
+      if (self.isCart){
+          errorMessageHandler = window.cartView.cartView.model;
+      } else {
+          errorMessageHandler = window.checkoutViews.parentView.model;
+      }
         self.orderModel.apiVoidPayment(currentPayment.id).ensure(function(response){
+          // we use "ensure" instead of "then" in case currentPayment doesn't exist
+          //"1" is an errored status message. the payment sheet will close.
+          console.log(response);
           self.session.completePayment({"status": 1});
-          window.cartView.cartView.model.trigger('error', {
-              message: error.items[0].message || error.message || message
-          });
+            errorMessageHandler.trigger('error', {
+                message: errorMessage
+            });
         });
     },
     setStyle: function(style){
+        //TODO: there are only a few strings that will work here.
+        //validate that we pass in an appropriate one
         var self = this;
         var styleClass = "apple-pay-button-";
         if (!style){
@@ -236,6 +270,9 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         $("#applePayButton").addClass(styleClass);
     },
     setLanguage: function(){
+      //This language setter will only matter if the merchant changes the button significantly.
+      //Right now the button will just say "[apple logo]Pay",
+      //which doesn't change between languages.
         var locale = apiContext.headers['x-vol-locale'];
         $("#applePayButton").attr('lang', locale.substring(0, 2));
     },
@@ -244,14 +281,11 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         if (this.isCart){
             if (this.multishipEnabled){
                 return this.cart.apiCheckout2().then(function(responseData){
-                    //return responseData;
                     return new ApplePayCheckout(responseData.data);
                 }, function(error){
-                  ////console.log(error);
                 });
             } else {
                 return this.cart.apiCheckout().then(function(responseData){
-                    //return responseData;
                     return new ApplePayOrder(responseData.data);
                 });
             }
@@ -267,7 +301,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         }
     },
     setShippingContact: function(appleShippingContact){
-      if (!this.isCart){
+      if (!this.isShippingInfoNeeded()){
         var deferred = Api.defer();
         deferred.resolve();
         return deferred.promise;
@@ -277,7 +311,6 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
 
           var appleFulfillmentData = {};
 
-          //TODO: make this clone work
           appleFulfillmentData.fulfillmentContact = {
               "address": {
                   "address1": appleShippingContact.addressLines[0] || "",
@@ -300,7 +333,6 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
       if (self.multishipEnabled){
         return self.setShippingDestinations(appleFulfillmentData.fulfillmentContact);
       } else {
-
         var fulfillmentInfo = appleFulfillmentData;
         if (user && user.email) {
             fulfillmentInfo.fulfillmentContact.email =  user.email;
@@ -329,11 +361,17 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
       //TODO: only do this if we haven't already selected the shipping method.
       //Be sure to return a promise regardless
       var self = this;
+
+      if (!self.isShippingInfoNeeded()){
+          var deferred = Api.defer();
+          deferred.resolve();
+          return deferred.promise;
+      }
       return self.orderModel.apiModel.getShippingMethods(null, {silent:true}).then(
           function (methods) {
 
               if (methods.length === 0) {
-                  self.handleError(null, Hypr.getLabel("noShippingMethods"));
+                  self.handleError(null, Hypr.getLabel('noShippingMethods'));
               }
 
               if (self.multishipEnabled){
@@ -352,9 +390,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                     shippingMethods.push({groupingId: method.groupingId, shippingRate: shippingRate});
                 });
 
-                return self.orderModel.apiModel.setShippingMethods({id: self.orderModel.get('id'), postdata:shippingMethods})/*.then(function(result) {
-                    // me.applyBilling();
-                })*/;
+                return self.orderModel.apiModel.setShippingMethods({id: self.orderModel.get('id'), postdata:shippingMethods});
 
               } else {
               var shippingMethod = "";
@@ -396,7 +432,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         //If we aren't on the cart, we don't need to get shipping info
         //however, for some reason, you can only get email and phone number
         //on the apple shipping contact fields - not their billing contact fields
-        if (this.isCart){
+        if (this.isShippingInfoNeeded()){
           requiredShippingContactFields.push("postalAddress");
           requiredShippingContactFields.push("name");
         }

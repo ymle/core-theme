@@ -421,7 +421,7 @@ define(['modules/api',
         renderVisaCheckout(cartModel);
         paypal.loadScript();
         //if (ApplePay.isEnabled && cartModel.count() > 0){
-          ApplePay.init(null, cartViews.cartView);
+          ApplePay.init();
         //}
         if (AmazonPay.isEnabled && cartModel.count() > 0)
             AmazonPay.addCheckoutButton(cartModel.id, true);
