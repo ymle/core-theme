@@ -30,7 +30,6 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
 
         if (ApplePaySession && ApplePaySession.canMakePayments()){
           self.getOrder().then(function(orderModel){
-            //console.log(orderModel);
             $("#applePayButton").show();
             //assigning our click handler to the document so it still works after re-render
             $(document).on('click', '.apple-pay-button', function(event){
@@ -253,8 +252,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         self.orderModel.apiVoidPayment(currentPayment.id).ensure(function(response){
           // we use "ensure" instead of "then" in case currentPayment doesn't exist
           //"1" is an errored status message. the payment sheet will close.
-          console.log(response);
-          self.session.completePayment({"status": 1});
+         self.session.completePayment({"status": 1});
             errorMessageHandler.trigger('error', {
                 message: errorMessage
             });
