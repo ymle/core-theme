@@ -15,28 +15,24 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         this.isCart = window.location.href.indexOf("cart") > 0;
         this.multishipEnabled = hyprlivecontext.locals.siteContext.generalSettings.isMultishipEnabled;
         this.storeName = hyprlivecontext.locals.siteContext.generalSettings.websiteName;
-        if (this.isCart){
-            this.cart = window.cartView.cartView.model;
-        }
         // configure button with selected style and language
         this.setStyle(style);
         this.setLanguage();
-
         /*
           canMakePayments passes if:
           - the user is on the most recent version of Safari on OSX sierra or a recent iPad
           - the user has a wallet set up on a logged-in, up-to-date iPhone (must be iPhone - not iPad)
         */
-
         if (ApplePaySession && ApplePaySession.canMakePayments()){
-          self.getOrder().then(function(orderModel){
             $("#applePayButton").show();
             //assigning our click handler to the document so it still works after re-render
-            $(document).off('click', '.apple-pay-button').on('click', '.apple-pay-button', function(event){
 
+            $(document).off('click', '.apple-pay-button').on('click', '.apple-pay-button', function(event){
+              var request = self.buildRequest();
+              self.session = new ApplePaySession(3, request);
+              self.getOrder().then(function(orderModel){
               //orderModel is either an ApplePayCheckout or ApplePayOrder
               self.orderModel = orderModel;
-              var request = self.buildRequest();
               self.applePayToken = new TokenModels.Token({ type: 'APPLEPAY' });
 
               // first define our ApplePay Session with the version number.
@@ -44,8 +40,6 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
               // after our session object knows how to respond to apple's various events,
               // we call begin(). The merchant is then validated, initializing
               // the 'true' session.
-
-              self.session = new ApplePaySession(3, request);
 
               // set handlers. These all get called by apple.
               self.session.onvalidatemerchant = function(event){
@@ -196,18 +190,17 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                 });
               }
             });
-
           };
           //Called if the modal is closed at any point
           self.session.oncancel = function(event){
-            var self = this;
-            if (self.orderModel && self.orderModel.apiModel.getCurrentPayment()){
-                var currentPayment = self.orderModel.apiModel.getCurrentPayment();
-                self.orderModel.apiVoidPayment(currentPayment.id);
-            }
+              var self = this;
+              if (self.orderModel && self.orderModel.apiModel.getCurrentPayment()){
+                  var currentPayment = self.orderModel.apiModel.getCurrentPayment();
+                  self.orderModel.apiVoidPayment(currentPayment.id);
+              }
           };
-          self.session.begin();
           window.pageHasApplePaySession = true;
+          self.session.begin();
           });
         });
 
@@ -220,9 +213,9 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
     isShippingInfoNeeded: function(){
         var self = this;
         if (!self.isCart) return false;
-
+        this.cart = window.cartView.cartView.model;
         var hasShippingItem = false;
-        var items = self.cart.get('items');
+        var items = this.cart.get('items');
         items.forEach(function(item){
             if (item.get('fulfillmentMethod').toLowerCase() == "ship"){
                 hasShippingItem = true;
@@ -271,7 +264,8 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         $("#applePayButton").addClass(styleClass);
     },
     setLanguage: function(){
-      //This language setter will only matter if the merchant changes the button significantly.
+      //This language setter will only matter if the merchant adds additional support
+      //for displaying other kinds of Apple Pay buttons.
       //Right now the button will just say "[apple logo]Pay",
       //which doesn't change between languages.
         var locale = apiContext.headers['x-vol-locale'];
@@ -280,24 +274,27 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
     getOrder: function(){
         var self = this;
         if (this.isCart){
+              this.cart = window.cartView.cartView.model;
             if (this.multishipEnabled){
                 return this.cart.apiCheckout2().then(function(responseData){
                     return new ApplePayCheckout(responseData.data);
                 }, function(error){
+                    self.handleError(error);
                 });
             } else {
                 return this.cart.apiCheckout().then(function(responseData){
                     return new ApplePayOrder(responseData.data);
+                }, function(error){
+                    self.handleError(error);
                 });
             }
         } else {
-          var deferred = Api.defer();
             if (this.multishipEnabled){
-                deferred.resolve(ApplePayCheckout.fromCurrent());
-                return deferred.promise;
+                var checkout = ApplePayCheckout.fromCurrent();
+                return checkout.fetch();
             } else {
-                deferred.resolve(new ApplePayOrder(require.mozuData('checkout')));
-                return deferred.promise;
+                var order = new ApplePayOrder(require.mozuData('checkout'));
+                return order.fetch();
             }
         }
     },
@@ -438,7 +435,13 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
           requiredShippingContactFields.push("name");
         }
         //toFixed returns a string. We are fine with that.
-        var totalAmount = self.orderModel.get('amountRemainingForPayment');
+
+        var totalAmount;
+        if (this.isCart){
+            totalAmount = window.cartView.cartView.model.get('total');
+        } else {
+            totalAmount = window.checkoutViews.orderSummary.model.get('total');
+        }
         var total = { label: self.storeName, amount: totalAmount.toFixed(2) };
         var requiredBillingContactFields = [
             'postalAddress',
