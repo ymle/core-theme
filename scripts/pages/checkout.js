@@ -237,7 +237,7 @@ require(["modules/jquery-mozu",
             this.model.setPurchaseOrderPaymentTerm(e.target.value);
         },
         render: function() {
-            preserveElements(this, ['.v-button', '.p-button','#amazonButtonPaymentSection'], function() {
+            preserveElements(this, ['.v-button', '.p-button','#amazonButtonPaymentSection', '.apple-pay-button'], function() {
                 CheckoutStepView.prototype.render.apply(this, arguments);
             });
             var status = this.model.stepStatus();
@@ -250,10 +250,12 @@ require(["modules/jquery-mozu",
                 this.visaCheckoutInitialized = true;
             }
 
+            if (this.$(".apple-pay-button").length > 0)
+                ApplePay.init();
+
             if (this.$(".p-button").length > 0)
                 PayPal.loadScript();
 
-            ApplePay.init();
         },
         updateAcceptsMarketing: function(e) {
             this.model.getOrder().set('acceptsMarketing', $(e.currentTarget).prop('checked'));
@@ -620,6 +622,7 @@ require(["modules/jquery-mozu",
             checkoutData = require.mozuData('checkout');
 
         AmazonPay.init(true);
+
         checkoutData.isAmazonPayEnable = AmazonPay.isEnabled;
 
         var checkoutModel = window.order = new CheckoutModels.CheckoutPage(checkoutData),

@@ -10,8 +10,8 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         var self = this;
         var paymentSettings = _.findWhere(hyprlivecontext.locals.siteContext.checkoutSettings.externalPaymentWorkflowSettings, {"name" : "APPLEPAY"});
         if (!paymentSettings || !paymentSettings.isEnabled) return;
-        this.isEnabled = paymentSettings.isEnabled;
-        this.isEnabled = true;
+        if(self.scriptLoaded) return;
+        self.scriptLoaded = true;
         this.isCart = window.location.href.indexOf("cart") > 0;
         this.multishipEnabled = hyprlivecontext.locals.siteContext.generalSettings.isMultishipEnabled;
         this.storeName = hyprlivecontext.locals.siteContext.generalSettings.websiteName;
@@ -32,7 +32,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
           self.getOrder().then(function(orderModel){
             $("#applePayButton").show();
             //assigning our click handler to the document so it still works after re-render
-            $(document).on('click', '.apple-pay-button', function(event){
+            $(document).off('click', '.apple-pay-button').on('click', '.apple-pay-button', function(event){
 
               //orderModel is either an ApplePayCheckout or ApplePayOrder
               self.orderModel = orderModel;
@@ -201,22 +201,18 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
           //Called if the modal is closed at any point
           self.session.oncancel = function(event){
             var self = this;
-            var currentPayment = self.orderModel.apiModel.getCurrentPayment();
-            if (currentPayment) {
-              self.orderModel.apiVoidPayment(currentPayment.id);
+            if (self.orderModel && self.orderModel.apiModel.getCurrentPayment()){
+                var currentPayment = self.orderModel.apiModel.getCurrentPayment();
+                self.orderModel.apiVoidPayment(currentPayment.id);
             }
           };
-
           self.session.begin();
-
+          window.pageHasApplePaySession = true;
           });
         });
 
-        } else {
-          if ($("#applePayButton")){
-              $("#applePayButton").hide();
-          }
         }
+
     },
     // We only want to get shipping info from the user via applePay if BOTH:
     // 1. We are currently on the cart. When we kick the user to checkout, shipping info will be populated.
@@ -239,7 +235,12 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
       //message can be a string if you want to pass in your own
       var self = this;
       var currentPayment = self.orderModel.apiModel.getCurrentPayment() || {};
-      var errorMessage = error.message || error.items[0].message || message;
+      var errorMessage = "";
+      if (error.items && error.items.length) {
+          errorMessage = error.items[0].message;
+      } else {
+        errorMessage = error.message || message;
+      }
       //this function works on both the cart page and the checkout page
       //a model which is attached to a backbone view with a messages element defined is necessary to trigger 'error'.
       //conveniently, we keep our cart and checkout backbone views stored on our window object.
