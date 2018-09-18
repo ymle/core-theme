@@ -5,6 +5,16 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
   var ApplePaySession = window.ApplePaySession;
   var ApplePayCheckout = Backbone.MozuModel.extend({ mozuType: 'checkout'});
   var ApplePayOrder = Backbone.MozuModel.extend({ mozuType: 'order' });
+  /*
+    This module:
+      - displays and styles an Apple Pay button
+      - makes a request to apple with context-dependent info to start an Apple Pay session when the button is clicked
+      - creates checkout from cart or fetches a current checkout to apply the information to
+      - assigns a bunch of handlers to the session, mostly useless to us but necessary for Apple
+      - when the payment is authorized on an iPhone, assigns the new information to the new checkout
+      - if there are any problems in assigning this information, closes the Apple Pay sheet and displays an error on page
+      - loads the checkout page complete with the new information from apple.
+  */
   var ApplePay = {
     init: function(style){
         var self = this;
@@ -25,8 +35,12 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         */
         if (ApplePaySession && ApplePaySession.canMakePayments()){
             $("#applePayButton").show();
-            //assigning our click handler to the document so it still works after re-render
 
+            // when an element is rendered dynamically, any click listeners assigned get removed
+            // so we are assigning our click listener to the document and specifying a selector.
+            // we have safeguards preventing this script from running multiple times, but we've included
+            // an "off" click just in case - if this handler got assigned multiple times, it would try to run
+            // the session maker more than once and initialize more than one apple pay session, causing an error.
             $(document).off('click', '.apple-pay-button').on('click', '.apple-pay-button', function(event){
               var request = self.buildRequest();
               self.session = new ApplePaySession(3, request);
@@ -64,9 +78,12 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                   });
               };
 
-
               self.session.onpaymentmethodselected = function(event){
                   var amount = self.orderModel.get('amountRemainingForPayment');
+                  //these handlers each have a corresponding callback to apple
+                  //apple expects us to have changed the price according to
+                  //shipping costs at this point so we have to send them
+                  // a 'new' amount
                   self.session.completePaymentMethodSelection(
                     {
                       newTotal: {
@@ -78,12 +95,8 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                     }
                   );
               };
-              self.session.onshippingcontactselected = function(event) {
-                  //these handlers each have a corresponding callback to apple
-                  //apple expects us to have changed the price according to
-                  //shipping costs at this point so we have to send them
-                  // a 'new' amount
 
+              self.session.onshippingcontactselected = function(event) {
                   var amount = self.orderModel.get('amountRemainingForPayment');
                   self.session.completeShippingContactSelection({
                     newTotal: {
@@ -106,6 +119,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                   newLineItems: []
                 });
               };
+
               //This handler gets called after the user authorizes the wallet payment
               //on their phone. This is when we receive the payment token from apple.
               self.session.onpaymentauthorized = function(event) {
@@ -149,7 +163,7 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                           },
                           token: {
                               paymentServiceTokenId: response.id,
-                              type: 'applePay'
+                              type: 'ApplePay'
                           }
                       }
                     };
@@ -199,14 +213,13 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                   self.orderModel.apiVoidPayment(currentPayment.id);
               }
           };
-          window.pageHasApplePaySession = true;
+
           self.session.begin();
-          });
-        });
 
-        }
-
-    },
+        }); //getorder apicall
+      }); // click handler
+    } // if statement canMakePayments
+  },
     // We only want to get shipping info from the user via applePay if BOTH:
     // 1. We are currently on the cart. When we kick the user to checkout, shipping info will be populated.
     // 2. The cart has items that will be shipped. If it's all pickup items, we don't want to bother asking for shipping info and confuse them.
@@ -251,6 +264,10 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                 message: errorMessage
             });
         });
+
+        // Apple has its own cool error handling functionality which entirely
+        // did not work at all. I think it's an issue with Apple. So we aren't using it.
+        // Its future implementation isn't off the table though.
     },
     setStyle: function(style){
         //TODO: there are only a few strings that will work here.
@@ -325,7 +342,6 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
               "phoneNumbers": {
                   "home": appleShippingContact.phoneNumber
               }
-
           };
 
       if (self.multishipEnabled){
@@ -356,8 +372,6 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
 
     },
     setShippingMethod: function (){
-      //TODO: only do this if we haven't already selected the shipping method.
-      //Be sure to return a promise regardless
       var self = this;
 
       if (!self.isShippingInfoNeeded()){
@@ -438,6 +452,9 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
 
         var totalAmount;
         if (this.isCart){
+          // we aren't fetching our data from the module's orderModel yet because
+          // it isn't created yet. These view models are the most up-to-date info
+          // available.
             totalAmount = window.cartView.cartView.model.get('total');
         } else {
             totalAmount = window.checkoutViews.orderSummary.model.get('total');

@@ -12,6 +12,14 @@
         {% if model.billingInfo.paymentType == "GiftCard" %}{{ labels.giftCard }}{% endif %}
         {% if model.billingInfo.paymentType == "StoreCredit" %}{{ labels.digitalCredit }}{% endif %}
         {% if model.billingInfo.paymentType == "PurchaseOrder" %}{{ labels.purchaseOrder }} - {{ model.billingInfo.purchaseOrder.purchaseOrderNumber }}{% endif %}
+        {% if model.billingInfo.paymentType|lower == "token" %}
+          {%if model.billingInfo.token.type|lower == "paywithamazon" %}
+              {{ labels.payWithAmazon }}
+          {%endif%}
+          {% if model.billingInfo.token.type|lower == "applepay" %}
+              {{ labels.applePay }}
+          {% endif %}
+        {% endif %}
     </h4>
 
     {% if model.billingInfo.billingContact.email %}
