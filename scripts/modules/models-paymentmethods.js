@@ -7,7 +7,6 @@
             if (!value) return this.validation[attr.split('.').pop()].msg || Hypr.getLabel('genericRequired');
         }
     });
-
     var twoWayCardShapeMapping = {
         "cardNumber": "cardNumberPartOrMask",
         "cardNumberPart": "cardNumberPartOrMask",

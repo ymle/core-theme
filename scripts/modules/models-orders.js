@@ -1,4 +1,4 @@
-define(["modules/api", 'underscore', "modules/backbone-mozu", "hyprlive", "modules/models-product", "modules/models-returns"], function(api, _, Backbone, Hypr, ProductModels, ReturnModels) {
+define(["modules/api", 'underscore', "modules/backbone-mozu", "hyprlive", "modules/models-product", "modules/models-returns", "hyprlivecontext"], function (api, _, Backbone, Hypr, ProductModels, ReturnModels, HyprLiveContext) {
 
     var OrderItem = Backbone.MozuModel.extend({
             relations: {
