@@ -825,7 +825,12 @@ var CheckoutPage = Backbone.MozuModel.extend({
 
                 return isValid;
             },
-
+            syncApiModel: function () {
+                if (this.get('submittedDate')) {
+                    window.location = (HyprLiveContext.locals.siteContext.siteSubdirectory || '') + "/checkoutv2";
+                }
+                Backbone.MozuModel.prototype.syncApiModel.apply(this);
+            },
             submit: function () {
                 var checkout = this,
                     billingInfo = this.get('billingInfo'),

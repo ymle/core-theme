@@ -320,6 +320,12 @@ define(["modules/api", 'underscore', "modules/backbone-mozu", "hyprlive", "modul
                 //Figuring out what items have yet to ship is somwhat heavy. So in order to ensure it is only run once we do this here.
                 self.setNonShippedItems();
             },
+            syncApiModel: function () {
+                if (this.get('submittedDate')) {
+                    window.location = (HyprLiveContext.locals.siteContext.siteSubdirectory || '') + "/checkout";
+                }
+                Backbone.MozuModel.prototype.syncApiModel.apply(this);
+            },
             hasFulfilledPackages: function() {
                 var self = this,
                     hasfulfilledPackage = false;
