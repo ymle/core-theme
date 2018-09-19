@@ -405,10 +405,10 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
       var self = this;
       var totalAmount = self.orderModel.get('amountRemainingForPayment');
       var newLineItems = [];
-
       var taxAmount = self.orderModel.get('taxTotal');
       var subtotalAmount = self.orderModel.get('subtotal');
       var shippingAmount = self.orderModel.get('shippingSubTotal') - (self.orderModel.get('itemLevelShippingDiscountTotal') || 0);
+      var orderDiscounts = self.orderModel.get('orderDiscounts');
       if (taxAmount || shippingAmount){
           newLineItems.push({
               "label": "Subtotal",
@@ -427,6 +427,19 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
               "amount": shippingAmount.toFixed(2)
           });
       }
+
+      if (orderDiscounts && orderDiscounts.length){
+          orderDiscounts.forEach(function(orderDiscount){
+              if (!orderDiscount.excluded){
+                  newLineItems.push({
+                      "label": orderDiscount.discount.name,
+                      "amount": "-"+orderDiscount.impact.toFixed(2)
+                  });
+              }
+          });
+
+      }
+
 
       return {
           newTotal: {
