@@ -292,6 +292,8 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
             }
         }
     },
+    // base method for setting shipping address. expected to return a promise.
+    // returns a multiship-specific version of this function when necessary.
     setShippingContact: function(appleShippingContact){
       if (!this.isShippingInfoNeeded()){
         var deferred = Api.defer();
@@ -334,8 +336,8 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         return self.orderModel.apiModel.updateShippingInfo(fulfillmentInfo,  { silent: true });
       }
     },
+    // shipping address setter for multiship.
     setShippingDestinations: function(fulfillmentContact){
-        // shipping address setter for multiship.
         var self = this;
         var destinationPayload = {
             destinationContact: fulfillmentContact
@@ -348,14 +350,17 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
         });
 
     },
+    // sets the shipping method on the order model to least expensive available. Expected to return a promise
     setShippingMethod: function (){
       var self = this;
 
+      // return a deferred if there are no ship items or we're already in checkout
       if (!self.isShippingInfoNeeded()){
           var deferred = Api.defer();
           deferred.resolve();
           return deferred.promise;
       }
+
       return self.orderModel.apiModel.getShippingMethods(null, {silent:true}).then(
           function (methods) {
 
@@ -383,9 +388,6 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
 
               } else {
               var shippingMethod = "";
-              // if (existingShippingMethodCode)
-              //     shippingMethod = _.findWhere(methods, {shippingMethodCode: existingShippingMethodCode});
-
               if (!shippingMethod || !shippingMethod.shippingMethodCode)
                   shippingMethod =_.min(methods, function(method){return method.price;});
 
@@ -406,10 +408,10 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
       var totalAmount = self.orderModel.get('amountRemainingForPayment');
       var newLineItems = [];
       var taxAmount = self.orderModel.get('taxTotal');
-      var subtotalAmount = self.orderModel.get('subtotal');
+      var subtotalAmount = self.orderModel.get('discountedSubtotal');
       var shippingAmount = self.orderModel.get('shippingSubTotal') - (self.orderModel.get('itemLevelShippingDiscountTotal') || 0);
       var orderDiscounts = self.orderModel.get('orderDiscounts');
-      if (taxAmount || shippingAmount){
+      if (totalAmount != subtotalAmount){
           newLineItems.push({
               "label": "Subtotal",
               "amount": subtotalAmount.toFixed(2)
