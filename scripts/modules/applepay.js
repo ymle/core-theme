@@ -77,47 +77,24 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
                       self.handleError(error);
                   });
               };
+              //these handlers each have a corresponding callback to apple
+              //apple expects us to have changed the price according to
+              //shipping costs at this point so we have to send them
+              // a 'new' amount
 
               self.session.onpaymentmethodselected = function(event){
-                  var amount = self.orderModel.get('amountRemainingForPayment');
-                  //these handlers each have a corresponding callback to apple
-                  //apple expects us to have changed the price according to
-                  //shipping costs at this point so we have to send them
-                  // a 'new' amount
-                  self.session.completePaymentMethodSelection(
-                    {
-                      newTotal: {
-                        "label": self.storeName,
-                        "amount": amount,
-                        "type": "final"
-                      },
-                      newLineItems: []
-                    }
-                  );
+                  var payload = self.completeSelectionPayload();
+                  self.session.completePaymentMethodSelection(payload);
               };
 
               self.session.onshippingcontactselected = function(event) {
-                  var amount = self.orderModel.get('amountRemainingForPayment');
-                  self.session.completeShippingContactSelection({
-                    newTotal: {
-                      "label": self.storeName,
-                      "amount": amount,
-                      "type": "final"
-                    },
-                    newLineItems: []
-                  });
+                var payload = self.completeSelectionPayload();
+                  self.session.completeShippingContactSelection(payload);
               };
 
               self.session.onbillingcontactselected = function(event){
-                var amount = self.orderModel.get('amountRemainingForPayment');
-                self.session.completeBillingContactSelection({
-                  newTotal: {
-                    "label": self.storeName,
-                    "amount": amount,
-                    "type": "final"
-                  },
-                  newLineItems: []
-                });
+                var payload = self.completeSelectionPayload();
+                self.session.completeBillingContactSelection(payload);
               };
 
               //This handler gets called after the user authorizes the wallet payment
@@ -420,6 +397,45 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
             }
           }
         );
+    },
+    // All of the handlers for completing payment and address selection require
+    // that we send Apple an object with updated line items for amounts.
+    // Each of them use the same format of object, so we use this function.
+    completeSelectionPayload: function(){
+      var self = this;
+      var totalAmount = self.orderModel.get('amountRemainingForPayment');
+      var newLineItems = [];
+
+      var taxAmount = self.orderModel.get('taxTotal');
+      var subtotalAmount = self.orderModel.get('subtotal');
+      var shippingAmount = self.orderModel.get('shippingSubTotal') - (self.orderModel.get('itemLevelShippingDiscountTotal') || 0);
+      if (taxAmount || shippingAmount){
+          newLineItems.push({
+              "label": "Subtotal",
+              "amount": subtotalAmount.toFixed(2)
+          });
+      }
+      if (taxAmount){
+          newLineItems.push({
+              "label": "Tax",
+              "amount": taxAmount.toFixed(2)
+          });
+      }
+      if (shippingAmount){
+          newLineItems.push({
+              "label": "Shipping & Handling",
+              "amount": shippingAmount.toFixed(2)
+          });
+      }
+
+      return {
+          newTotal: {
+            "label": self.storeName,
+            "amount": totalAmount.toFixed(2),
+            "type": "final"
+          },
+          newLineItems: newLineItems
+        };
     },
     buildRequest: function(){
       /* build the request out of the store name, order total,
