@@ -408,7 +408,8 @@ function($, Hypr, Api, hyprlivecontext, _, Backbone, CartModels, CheckoutModels,
       var totalAmount = self.orderModel.get('amountRemainingForPayment');
       var newLineItems = [];
       var taxAmount = self.orderModel.get('taxTotal');
-      var subtotalAmount = self.orderModel.get('subTotal') - self.orderModel.get('itemLevelProductDiscountTotal');
+      //casing for the subtotal value varies depending on context apparently... eye roll emoji
+      var subtotalAmount = (self.orderModel.get('subTotal') || self.orderModel.get('subtotal')) - (self.orderModel.get('itemLevelProductDiscountTotal') || 0);
       var shippingAmount = self.orderModel.get('shippingSubTotal') - (self.orderModel.get('itemLevelShippingDiscountTotal') || 0);
       var orderDiscounts = self.orderModel.get('orderDiscounts');
       if (totalAmount != subtotalAmount){
