@@ -673,7 +673,13 @@
     "useDebugScripts": false,
     "useSearchAutocomplete": true,
     "allowCustomerInitiatedReturns": true,
-    "visaCheckoutSdkUrl": "https://sandbox-assets.secure.checkout.visa.com/checkout-widget/resources/js/integration/v1/sdk.js"
+    "visaCheckoutSdkUrl": "https://sandbox-assets.secure.checkout.visa.com/checkout-widget/resources/js/integration/v1/sdk.js",
+    "randomText" : "randomText",
+    "enableOverdrive": true,
+    "selectInterests": [
+        "Theme Settings",
+        "Hypr Templates"
+    ]
   },
   "layoutWidgets": [
     {
