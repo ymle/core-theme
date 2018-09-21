@@ -369,7 +369,7 @@
     "phoneNumberEnabled": true,
     "billingEmailEnabled": true,
     "bannerImage": "/resources/images/banner.jpg",
-    "bannerImageEnabled": false,
+    "bannerImageEnabled": true,
     "bannerImageRepeat": "repeat-x",
     "bodyBackgroundColor": "#FFFFFF",
     "cmsTextStyles": [
