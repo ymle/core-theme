@@ -1,0 +1,4 @@
+<div id="SelectValidOption" style="display:none; cursor: default"> 
+    Select Valid Option(s)
+    <input type="button" class="btn button_secondary" id="mz-close-button" value="Close" /> 
+</div>

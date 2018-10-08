@@ -5,7 +5,8 @@
         hyprlive: "empty:",
         hyprlivecontext: "empty:",
         underscore: "vendor/underscore/underscore",
-        backbone: "vendor/backbone/backbone"
+        backbone: "vendor/backbone/backbone",
+        blockui: "vendor/jquery.blockUI/jquery.blockUI.min"
     },
     dir: "compiled/scripts/",
     locale: "en-us",
@@ -36,6 +37,7 @@
                 'modules/views-messages',
                 'modules/views-paging',
                 'modules/views-productlists',
+                'modules/block-ui'
             ],
             exclude: ['jquery'],
         },
