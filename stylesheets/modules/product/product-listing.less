@@ -41,28 +41,51 @@
     .mz-productlisting-image {
         text-align: center;
         position: relative;
-        a.quick-view-btn {
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 45px;
-            line-height: 45px;
-            text-align: center;
-            background: @product-hover-quickview-color;
-            color: @color-white;
-            position: absolute;
-            display: block;
-            text-transform: uppercase;
-            text-decoration:none;
-            -webkit-transition: opacity 1s cubic-bezier(.23,1,.32,1), visibility 1s cubic-bezier(.23,1,.32,1);
-            transition: opacity 1s cubic-bezier(.23,1,.32,1), visibility 1s cubic-bezier(.23,1,.32,1);
-            opacity: 0;
-            visibility: hidden;
+    }
+}
+
+@media only screen {
+    @media (max-width: 768px) {
+        .mz-productlisting {
+            .mz-productlisting-image {
+                a.quick-view-btn {
+                    display: none;
+                }
+            }
         }
     }
+}
 
-    div.mz-productlisting-image:hover a.quick-view-btn {
-        opacity: 1;
-        visibility: unset;
+@media only screen {
+    @media (min-width: 768px) {
+        .mz-productlisting {
+            .mz-productlisting-image {
+                text-align: center;
+                position: relative;
+                a.quick-view-btn {
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    height: 45px;
+                    line-height: 45px;
+                    text-align: center;
+                    background: @product-hover-quickview-color;
+                    color: @color-white;
+                    position: absolute;
+                    display: block;
+                    text-transform: uppercase;
+                    text-decoration:none;
+                    -webkit-transition: opacity 1s cubic-bezier(.23,1,.32,1), visibility 1s cubic-bezier(.23,1,.32,1);
+                    transition: opacity 1s cubic-bezier(.23,1,.32,1), visibility 1s cubic-bezier(.23,1,.32,1);
+                    opacity: 0;
+                    visibility: hidden;
+                }
+            }
+
+            div.mz-productlisting-image:hover a.quick-view-btn {
+                opacity: 1;
+                visibility: unset;
+            }
+        }
     }
 }
