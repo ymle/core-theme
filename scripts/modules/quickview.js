@@ -9,11 +9,11 @@ define([
         'modules/cart-monitor',
         'modules/api',
         'modules/backbone-mozu',
-        'modules/block-ui'/*,
-        "bxslider",
+        'modules/block-ui',
+        "bxslider"/*,
         "widgets/powerreviews"*/
-    ],
-function($, _, Hypr, hyprlivecontext, ProductModels, CartMonitor, api, Backbone, blockUiLoader /*bxslider, MzPR*/) {
+],
+function($, _, Hypr, hyprlivecontext, ProductModels, CartMonitor, api, Backbone, blockUiLoader, bxslider /*, MzPR*/) {
 
     var sitecontext = hyprlivecontext.locals.siteContext;
     var cdn = sitecontext.cdnPrefix;

@@ -5,7 +5,7 @@ define([
 	var blockUiLoader = {		
 		globalLoader: function(){
 			$.blockUI({
-		        message: '<div><img src="/resources/images/loader_crest.png" alt="Loading..." /></div><div class="fa fa-spinner fa-spin"></div>',
+		        message: '<div><img style="width: 50%;" src="/resources/images/loader_crest.gif" alt="Loading..." /></div><div class="fa fa-spinner fa-spin"></div>',
 		        css: {
 		            border: 'none',
 		            padding: '15px',

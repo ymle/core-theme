@@ -6,7 +6,8 @@
         hyprlivecontext: "empty:",
         underscore: "vendor/underscore/underscore",
         backbone: "vendor/backbone/backbone",
-        blockui: "vendor/jquery.blockUI/jquery.blockUI.min"
+        blockui: "vendor/jquery.blockUI/jquery.blockUI.min",
+        bxslider:"vendor/jquery-bxslider/jquery.bxslider.min"
     },
     dir: "compiled/scripts/",
     locale: "en-us",
@@ -37,7 +38,8 @@
                 'modules/views-messages',
                 'modules/views-paging',
                 'modules/views-productlists',
-                'modules/block-ui'
+                'modules/block-ui',
+                'modules/bxslider'
             ],
             exclude: ['jquery'],
         },
