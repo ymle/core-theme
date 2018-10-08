@@ -466,6 +466,7 @@ function($, _, Hypr, hyprlivecontext, ProductModels, CartMonitor, api, Backbone,
                             $('.quickviewSlider').on('click', 'button.btnAddToCart', function() {
                                 //var newQty = $('.mz-productdetail-qty').val();
                                 var newQty = 1;
+                                var body = $("html") || $("body");
                                 //if($('.mz-productdetail-qty').val() > 0){
                                 if(window.quickviewProduct.attributes.inventoryInfo.manageStock === true){
                                     if(typeof window.quickviewProduct.attributes.inventoryInfo.onlineStockAvailable === "undefined" || !window.quickviewProduct.attributes.purchasableState.isPurchasable ){
@@ -476,7 +477,7 @@ function($, _, Hypr, hyprlivecontext, ProductModels, CartMonitor, api, Backbone,
                                             window.quickviewProduct.apiAddToCart({
                                                 quantity: newQty
                                             }).then(function(){
-                                                $("html, body").animate({ scrollTop: 0 }, "slow", function(){
+                                                body.animate({ scrollTop: 0 }, "slow", function(){
                                                     CartMonitor.addToCount(newQty);
                                                 });
                                                 /*
@@ -496,7 +497,7 @@ function($, _, Hypr, hyprlivecontext, ProductModels, CartMonitor, api, Backbone,
                                             window.quickviewProduct.apiAddToCart({
                                                 quantity: window.quickviewProduct.attributes.inventoryInfo.onlineStockAvailable
                                             }).then(function(){
-                                                $("html, body").animate({ scrollTop: 0 }, "slow", function(){
+                                                body.animate({ scrollTop: 0 }, "slow", function(){
                                                     CartMonitor.addToCount(newQty);
                                                 });
                                                 $(".mz-validationmessage").text("");
@@ -509,7 +510,7 @@ function($, _, Hypr, hyprlivecontext, ProductModels, CartMonitor, api, Backbone,
                                     window.quickviewProduct.apiAddToCart({
                                         quantity: newQty
                                     }).then(function(){
-                                        $("html, body").animate({ scrollTop: 0 }, "slow", function(){
+                                        body.animate({ scrollTop: 0 }, "slow", function(){
                                             CartMonitor.addToCount(newQty);
                                         });
                                     });
