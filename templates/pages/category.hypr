@@ -11,4 +11,12 @@
 <div data-mz-category="{{model.categoryId}}" class="mz-l-container">
     {% include "pages/category-interior" %}
 </div>
+
+<div class="quickviewSlider">
+    {% block quickview-slider %}
+        {% include "modules/product/product-quick-view" %}
+    {% endblock quickview-slider %}
+</div>
+{% require_script "modules/quickview" %}
+
 {% endblock body-content %}

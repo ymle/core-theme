@@ -369,7 +369,7 @@
     "phoneNumberEnabled": true,
     "billingEmailEnabled": true,
     "bannerImage": "/resources/images/banner.jpg",
-    "bannerImageEnabled": true,
+    "bannerImageEnabled": false,
     "bannerImageRepeat": "repeat-x",
     "bodyBackgroundColor": "#FFFFFF",
     "cmsTextStyles": [
@@ -399,7 +399,8 @@
     "internal-themeAddons": [],
     "itemListingThumbSize": 80,
     "listProductCode": true,
-    "listProductShortDesc": true,
+    "listProductShortDesc": false,
+    "listProductQuickview": true,
     "listProductThumbSize": 160,
     "maxProductImageThumbnailSize": 50,
     "maxProductSummaryWords": 40,

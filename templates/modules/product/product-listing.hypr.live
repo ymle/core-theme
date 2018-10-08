@@ -9,6 +9,10 @@
                 <span class="mz-productlisting-imageplaceholder"><span class="mz-productlisting-imageplaceholdertext">{{ labels.productImagePlaceholder }}</span></span>
             {% endif %}
         </a>
+        {% if themeSettings.listProductQuickview %}
+            <a href="javascript:void(0);" class="quick-view-btn qvButton" data-target="{{ model.productCode }}">{{labels.quickview}}</a>
+        {% endif %}
+
         {% endblock product-image %}
     </div>
     <div class="mz-productlisting-info">
