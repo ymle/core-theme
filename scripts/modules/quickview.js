@@ -746,7 +746,6 @@ function($, _, Hypr, hyprlivecontext, ProductModels, CartMonitor, api, Backbone,
     }); // END OF PRODUCT DETAILS QUICK VIEW
 
     $(document).ready(function(){
-        var product = ProductModels.Product.fromCurrent();
         var quickViewView = new QuickViewView({
             el: $('body')
         });
