@@ -1,5 +1,7 @@
 {
   "quickview": "Quick View",
+  "upcInStock":"In-Stock",
+  "preOrderLabel":"Pre-Order",
   "dateFormat"       : "F j, Y",
 
   "logOut"               : "Log Out",

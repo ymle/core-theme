@@ -122,6 +122,102 @@ function($, _, Hypr, hyprlivecontext, ProductModels, CartMonitor, api, Backbone,
             }
         },
 
+        configure: function ($optionEl) {
+            var newValue = $optionEl.val(),
+                oldValue,
+                id = $optionEl.data('mz-product-option'),
+                optionEl = $optionEl[0],
+                isPicked = (optionEl.type !== "checkbox" && optionEl.type !== "radio") || optionEl.checked,
+                option = window.quickviewProduct.get('options').get(id),
+                product = window.quickviewProduct;
+            if (option) {
+                if (option.get('attributeDetail').inputType === "YesNo") {
+                    option.set("value", isPicked);
+                } else if (isPicked) {
+                    oldValue = option.get('value');
+                    if (oldValue !== newValue && !(oldValue === undefined && newValue === '')) {
+                        option.set('value', newValue);
+                    }
+                }
+            }
+
+            $('button.btnAddToCart').addClass('is-disabled')/*.prop('disabled','disabled')*/;
+
+            var isRequiredOptionsSet = true;
+            $('[data-mz-product-option]').each(function(opt) {
+                var currOptVal = $(this).find(":selected").text();
+
+                var productOptions = window.prodOptions.models;
+
+                for (var i = 0; i < productOptions.length; i++) {
+                    var currentOptionInFor = productOptions[i].attributes;
+
+                    if (currentOptionInFor.attributeFQN == $(this).data("mzProductOption")) {
+                        if (currentOptionInFor.isRequired) {
+                            if (!currOptVal || currOptVal === "" || currOptVal && currOptVal.toString().toLowerCase() == "select") {
+                                isRequiredOptionsSet = false;
+                            }
+                        }
+                    }
+                }
+            });
+
+            var prodOptions = [];
+            $(product.attributes.options.models).each(function(){
+                if(this.attributes.value){
+                    prodOptions.push(this);
+                }
+            });
+            product.apiConfigure({options: prodOptions}).then(function(e){
+
+                $(".mz-validationmessage").text("");
+                if (isRequiredOptionsSet) {
+                    if(window.quickviewProduct.attributes.inventoryInfo.manageStock === true){
+
+                        if(window.quickviewProduct.attributes.inventoryInfo.onlineStockAvailable > 0 && window.quickviewProduct.attributes.inventoryInfo.onlineStockAvailable <= hyprlivecontext.locals.themeSettings.minimumQuantityForInStockQuantityMessage){
+                            $(".mz-validationmessage").text("*Only " + window.quickviewProduct.attributes.inventoryInfo.onlineStockAvailable + " left in stock.");
+                        }
+                        if (window.quickviewProduct.attributes.inventoryInfo.onlineStockAvailable >= 1) {
+                            $('button.btnAddToCart').removeClass('is-disabled')/*.prop('disabled', false)*/;
+                            $('button.btnAddToCart').removeAttr("disabled");
+                        } else {
+                            $(".mz-qty-control").addClass("disabled");
+                            $('button.btnAddToCart').addClass('is-disabled');
+                            $('button.btnAddToCart').attr("disabled", "disabled");
+                        }
+                    } else {
+                        $('button.btnAddToCart').removeClass('is-disabled')/*.prop('disabled', false)*/;
+                        $('button.btnAddToCart').removeAttr("disabled");
+                    }
+                } else {
+                    $('button.btnAddToCart').addClass('is-disabled');
+                    $('button.btnAddToCart').attr("disabled", "disabled");
+                    $("#add-to-wishlist").addClass("is-disabled").prop('disabled','disabled');
+                }
+
+                $(".quickviewElement").removeClass("is-loading");
+                $(".quickviewElement input, .quickviewElement select").removeAttr("disabled");
+                //showStockMessage();
+                // SHOW ERROR ON FIELDS NOT FILLED IN
+                // if($(".mz-productoptions-valuecontainer input:radio")){
+                //     var color = "#ff0000";
+                //     if($(".mz-productoptions-valuecontainer input:radio:checked").val()){
+                //         color = "#000";
+                //     }
+                //     $(".mz-productoptions-valuecontainer input:radio + label").each(function(){
+                //         $(this).css("border-color", color);
+                //     });
+                // }
+                // $(".mz-productdetail-options input, .mz-productdetail-options select").each(function(){
+                //     if(($(this).val() && $(this).val().toLowerCase() == "select") || !$(this).val()){
+                //         $(this).css("border-color", "red");
+                //     } else {
+                //         $(this).css("border-color", "black");
+                //     }
+                // });
+            });
+        },
+
         onAttributeButtonClick: function(e) {
             if($(e.currentTarget).attr('disabled')=='disabled'){
                 return false;
@@ -318,7 +414,7 @@ function($, _, Hypr, hyprlivecontext, ProductModels, CartMonitor, api, Backbone,
                 var availableColors = [];
                 if(options_pro.models){
                     for (var i = 0; i < options_pro.models.length; i++) {
-                        if (options_pro.models[i].id == "tenant~COLOR") {
+                        if (options_pro.models[i].id == "tenant~color") {
                             for (var j = 0; j < options_pro.models[i].legalValues.length; j++) {
                                 var color = options_pro.models[i].legalValues[j].trim().replace(/ /g, '_').toLowerCase();
                                 var swatchIconSize = 57;
@@ -446,22 +542,22 @@ function($, _, Hypr, hyprlivecontext, ProductModels, CartMonitor, api, Backbone,
                             $(".quickviewElement").off('click');
 
                             // SHOW ERROR ON FIELDS NOT FILLED IN
-                            if($(".mz-productoptions-valuecontainer input:radio")){
-                                var color = "#ff0000";
-                                if($(".mz-productoptions-valuecontainer input:radio:checked").val()){
-                                    color = "#000";
-                                }
-                                $(".mz-productoptions-valuecontainer input:radio + label").each(function(){
-                                    $(this).css("border-color", color);
-                                });
-                            }
-                            $(".mz-productdetail-options input, .mz-productdetail-options select").each(function(){
-                                if(($(this).val() && $(this).val().toLowerCase() == "select") || !$(this).val()){
-                                    $(this).css("border-color", "red");
-                                } else {
-                                    $(this).css("border-color", "black");
-                                }
-                            });
+                            // if($(".mz-productoptions-valuecontainer input:radio")){
+                            //     var color = "#ff0000";
+                            //     if($(".mz-productoptions-valuecontainer input:radio:checked").val()){
+                            //         color = "#000";
+                            //     }
+                            //     $(".mz-productoptions-valuecontainer input:radio + label").each(function(){
+                            //         $(this).css("border-color", color);
+                            //     });
+                            // }
+                            // $(".mz-productdetail-options input, .mz-productdetail-options select").each(function(){
+                            //     if(($(this).val() && $(this).val().toLowerCase() == "select") || !$(this).val()){
+                            //         $(this).css("border-color", "red");
+                            //     } else {
+                            //         $(this).css("border-color", "black");
+                            //     }
+                            // });
                             // ADD LISTENER FOR ADD TO CART
                             $('.quickviewSlider').on('click', 'button.btnAddToCart', function() {
                                 //var newQty = $('.mz-productdetail-qty').val();
@@ -624,57 +720,33 @@ function($, _, Hypr, hyprlivecontext, ProductModels, CartMonitor, api, Backbone,
                             model: priceModel
                         }));
                     }
-                    if($(".mz-productoptions-valuecontainer input:radio")){
-                        var color = "#ff0000";
-                        if($(".mz-productoptions-valuecontainer input:radio:checked").val()){
-                            color = "#000";
-                        }
-                        $(".mz-productoptions-valuecontainer input:radio + label").each(function(){
-                            $(this).css("border-color", color);
-                        });
-                    }
-                    $(".mz-productdetail-options input, .mz-productdetail-options select").each(function(){
-                        if(($(this).data('value') && $(this).data('value').toLowerCase() == "select") || !$(this).data('value')){
-                            $(this).css("border-color", "red");
-                        } else {
-                            $(this).css("border-color", "black");
-                        }
-                    });
+                    // if($(".mz-productoptions-valuecontainer input:radio")){
+                    //     var color = "#ff0000";
+                    //     if($(".mz-productoptions-valuecontainer input:radio:checked").val()){
+                    //         color = "#000";
+                    //     }
+                    //     $(".mz-productoptions-valuecontainer input:radio + label").each(function(){
+                    //         $(this).css("border-color", color);
+                    //     });
+                    // }
+                    // $(".mz-productdetail-options input, .mz-productdetail-options select").each(function(){
+                    //     if(($(this).data('value') && $(this).data('value').toLowerCase() == "select") || !$(this).data('value')){
+                    //         $(this).css("border-color", "red");
+                    //     } else {
+                    //         $(this).css("border-color", "black");
+                    //     }
+                    // });
 
                 });
 
                 // Displays UPC and stock messages
-                showStockMessage();
-
+                //showStockMessage();
             });
-
-            //Load inline power reviews
-            /*MzPR.getConfig().then(function(config) {
-                var pCode = qvProductCode+"";
-                pCode = pCode.replace(/[.]/g,'');
-                var PRsettings = {
-                    locale: config.locale,
-                    merchant_group_id: config.merchantGrpId,
-                    page_id: pCode,
-                    merchant_id: config.merchantId,
-                    enable_client_side_structured_data: true,
-                    api_key: config.apiKey,
-                    review_wrapper_url: '/write-a-review?pr_page_id=' + pCode + '&locale=' + config.locale ,
-                    components: {
-                        CategorySnippet: 'pr-snippet-' + qvProductCode
-                    }
-                };
-                $.ajax({ url: MzPR.prScript }).done(function(script, textStatus) {
-                    POWERREVIEWS.display.render(PRsettings);
-                });
-            });*/
-
-
-
         }
     }); // END OF PRODUCT DETAILS QUICK VIEW
 
     $(document).ready(function(){
+        var product = ProductModels.Product.fromCurrent();
         var quickViewView = new QuickViewView({
             el: $('body')
         });

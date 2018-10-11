@@ -91,7 +91,7 @@
                                 <div class="flex-row">
                                     <div class="mz-productdetail-conversion-buttons">
                                         <div class="mz-addTo-options col-xs-6">
-                                            <button id="add-to-cart" class="mz-productdetail-addtocart btnAddToCart mz-button mz-button-large {% if not model.purchasableState.isPurchasable %}is-disabled{% endif %}"  data-mz-action="addToCart">
+                                            <button id="add-to-cart" class="mz-productdetail-addtocart btnAddToCart mz-button mz-button-large {% if not model.purchasableState.isPurchasable %}is-disabled{% endif %}" {% if not model.purchasableState.isPurchasable %} disabled="disabled" {% endif %} data-mz-action="addToCart">
                                                 {{ labels.addToCart }}
                                             </button>
                                             {% comment %}
