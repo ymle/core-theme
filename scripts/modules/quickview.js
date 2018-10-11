@@ -198,23 +198,6 @@ function($, _, Hypr, hyprlivecontext, ProductModels, CartMonitor, api, Backbone,
                 $(".quickviewElement").removeClass("is-loading");
                 $(".quickviewElement input, .quickviewElement select").removeAttr("disabled");
                 //showStockMessage();
-                // SHOW ERROR ON FIELDS NOT FILLED IN
-                // if($(".mz-productoptions-valuecontainer input:radio")){
-                //     var color = "#ff0000";
-                //     if($(".mz-productoptions-valuecontainer input:radio:checked").val()){
-                //         color = "#000";
-                //     }
-                //     $(".mz-productoptions-valuecontainer input:radio + label").each(function(){
-                //         $(this).css("border-color", color);
-                //     });
-                // }
-                // $(".mz-productdetail-options input, .mz-productdetail-options select").each(function(){
-                //     if(($(this).val() && $(this).val().toLowerCase() == "select") || !$(this).val()){
-                //         $(this).css("border-color", "red");
-                //     } else {
-                //         $(this).css("border-color", "black");
-                //     }
-                // });
             });
         },
 
