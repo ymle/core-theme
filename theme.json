@@ -361,6 +361,7 @@
     }
   ],
   "settings": {
+    "bonusItem": "BONUS-ITEM",
     "backofficeDateTimeFormat": "m/d/Y H:i:s O",
     "extendedPropertiesEnabled": false,
     "extendedPropertyParameters": "",

@@ -53,7 +53,11 @@
       {% include "modules/common/item-price" %}
     </td>
     <td class="mz-carttable-item-qty">
-      <input class="mz-carttable-qty-field" type="number" min="1" {% if model.isLoading %}disabled="disabled"{% endif %} data-mz-cart-item="{{ item.id }}" data-mz-value="quantity" value="{{ item.quantity }}" />
+        {% if item.product.productCode == themeSettings.bonusItem %}
+            <span>{{labels.freeGift}}</span>
+        {% else %}
+            <input class="mz-carttable-qty-field" type="number" min="1" {% if model.isLoading %}disabled="disabled"{% endif %} data-mz-cart-item="{{ item.id }}" data-mz-value="quantity" value="{{ item.quantity }}" />
+        {% endif %}
     </td>
     <td class="mz-carttable-item-total">
         {% include "modules/common/item-total" %}

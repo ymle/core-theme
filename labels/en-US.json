@@ -2,6 +2,7 @@
   "quickview": "Quick View",
   "upcInStock":"In-Stock",
   "preOrderLabel":"Pre-Order",
+  "freeGift": "Free gift",
   "dateFormat"       : "F j, Y",
 
   "logOut"               : "Log Out",
