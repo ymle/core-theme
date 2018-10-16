@@ -362,6 +362,7 @@
   ],
   "settings": {
     "bonusItem": "BONUS-ITEM",
+    "quickViewImageMaxWidth": 350,
     "backofficeDateTimeFormat": "m/d/Y H:i:s O",
     "extendedPropertiesEnabled": false,
     "extendedPropertyParameters": "",

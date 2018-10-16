@@ -3,6 +3,10 @@
   "upcInStock":"In-Stock",
   "preOrderLabel":"Pre-Order",
   "freeGift": "Free gift",
+  "tryAgain":"Please try again later.",
+  "viewDetails": "View Details",
+  "itemNumber": "Item#",
+  "selectValidOption": "Select Valid Option(s)",
   "dateFormat"       : "F j, Y",
 
   "logOut"               : "Log Out",

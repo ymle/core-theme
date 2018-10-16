@@ -1,5 +1,4 @@
-<!-- Modal -->
-<div class="slider-container quickviewElement" id="quickview_{{ model.productCode }}">
+<div class="slider-container quickViewElement" id="quickview_{{ model.productCode }}">
     <div class="right-side-slider initial-state animated" >
         <div class="slider-screen">
             <div class="title-text">
@@ -26,29 +25,19 @@
                         </ul>
                         {% else %}
                             <span class="mz-productlisting-imageplaceholder">
-                                    <span class="mz-productlisting-imageplaceholdertext">{{ labels.productImagePlaceholder }}</span>
-                                </span>
+                                <span class="mz-productlisting-imageplaceholdertext">{{ labels.productImagePlaceholder }}</span>
+                            </span>
                         {% endif %}
                     </div>
 
                     <div class="mz-productdetail-wrap col-sm-12">
                         <div class="mz-page-title-block">
-                            {% if model|get_product_attribute_value("tenant~Brands") %}
-                                <p class="mz-brandname">{{ model|get_product_attribute_value("tenant~Brands")|safe }}</p>
-                            {% endif %}
                             <h2 class="mz-pagetitle" itemprop="name">
                                 <span>{{ model.content.productName|safe }}</span>
                             </h2>
                             <div>
                                 <div class="col-sm-6 mz-all-item-code-container col-xs-12">
-                                            <span class="mz-productcodes-productcode p-3 item-code" itemprop="sku">Item # {{ model.productCode }}
-                                            </span>
-                                    <span class="mz-item-spring-container">{{ model|get_product_attribute_value('tenant~Additional Description Detail') }}</span>
-                                </div>
-                                <div class="col-sm-6 mz-all-review-container col-xs-12 text-right">
-                                    <div id="PRInlineRating-{{model.productCode}}" class="pr-inline-rating" data-mz-product-code="{{ model.productCode }}">
-                                        <div id="pr-snippet-{{model.productCode}}" ></div>
-                                    </div>
+                                    <span class="mz-productcodes-productcode p-3 item-code" itemprop="sku">{{ labels.itemNumber }} {{ model.productCode }}</span>
                                 </div>
                             </div>
                         </div>
@@ -59,14 +48,6 @@
                                     {% include "modules/product/price-stack" %}
                                 </div>
                             </div>
-                            {% comment %}
-                                {% if model.content.productShortDescription and themeSettings.showProductDetailShortDesc %}
-                                    <div class="mz-productdetail-shortdesc mz-l-stack-section">
-                                        <h4 class="mz-l-stack-sectiontitle"><strong>{{ labels.shortDesc }}</strong></h4>
-                                        <span itemscope="description">{{ model.content.productShortDescription|safe }}</span>
-                                    </div>
-                                {% endif %}
-                            {% endcomment %}
 
                             {% if model.options and model.options.length > 0 %}
                                 <div class="mz-productdetail-options">
@@ -78,15 +59,6 @@
 
 
                             <section class="mz-l-stack-section mz-productdetail-conversion">
-                                {% comment %}
-                                    <div class="mz-productdetail-conversion-controls">
-                                        <span class="mz-qty-label">{{ labels.qty }}</span>
-                                        <span class="mz-qty-control minus {% if not model.purchasableState.isPurchasable %}disabled{% endif %}">-</span>
-                                        <input class="mz-productdetail-qty" type="number" value="1" min="1" {% if not model.purchasableState.isPurchasable %} disabled="disabled" {% endif %} data-mz-value="quantity" />
-                                        <span class="mz-qty-control plus {% if not model.purchasableState.isPurchasable %}disabled{% endif %}">+</span>
-                                    </div>
-                                {% endcomment %}
-                                <span class="mz-validationmessage" id="stock-upc-msg" data-mz-validationmessage-for ></span>
                                 <span class="mz-validationmessage" data-mz-validationmessage-for="quantity"></span>
                                 <div class="flex-row">
                                     <div class="mz-productdetail-conversion-buttons">
@@ -94,48 +66,11 @@
                                             <button id="add-to-cart" class="mz-productdetail-addtocart btnAddToCart mz-button mz-button-large {% if not model.purchasableState.isPurchasable %}is-disabled{% endif %}" {% if not model.purchasableState.isPurchasable %} disabled="disabled" {% endif %} data-mz-action="addToCart">
                                                 {{ labels.addToCart }}
                                             </button>
-                                            {% comment %}
-                                                <button class="continueshopping">
-                                                    Continue Shopping
-                                                </button>
-                                                <a href="{{ model.url }}">View Full Product Details ></a>
-                                            {% endcomment %}
-
-                                            {% comment %}
-                                                {% if siteContext.supportsInStorePickup %}
-                                                    <form class="mz-instorepickup" method="POST" data-mz-localstoresform action="/location/product">
-                                                        <button type="submit" {% if model.notDoneConfiguring or not model.purchasableState.isPurchasable or not model.supportsInStorePickup %} disabled="disabled" {% endif %} class="mz-button mz-instorepickuplink-button {% if model.notDoneConfiguring or not model.purchasableState.isPurchasable or not model.supportsInStorePickup %}is-disabled{% endif %}" data-mz-action="checkLocalStores">{{ labels.checkLocalStores }}</button>
-                                                        <input type="hidden" data-mz-localstoresform-input name="item" value="{% json_attribute model %}" />
-                                                    </form>
-                                                {% endif %}
-                                            {% endcomment %}
-
                                             <div class="mz-view-details-btn text-center">
-                                                <a href="{{ model.url }}"><span>View Details</span> <i class="fa fa-play" aria-hidden="true"></i></a>
+                                                <a href="{{ model.url }}"><span>{{ labels.viewDetails }}</span> <i class="fa fa-play" aria-hidden="true"></i></a>
                                             </div>
                                         </div>
-                                        <div class="mz-addTo-wishlist-btn col-xs-6">
-                                            {% comment %}
-                                                {% if not model.purchasableState.isPurchasable %}is-disabled{% endif %}
-                                            {% endcomment %}
-                                            {% if siteContext.generalSettings.isWishlistCreationEnabled %}
-                                                <div class="mz-wishlist">
-                                                    <a id="add-to-wishlist" disabled="disabled" class="is-disabled mz-productdetail-addtowishlist" data-mz-action="addToWishlist">
-                                                        <i class="fa fa-heart" aria-hidden="true"></i> <span>{{ labels.addToWishlist }}</span>
-                                                    </a>
-                                                </div>
-                                            {% endif %}
-                                        </div>
                                     </div>
-                                    <div class="mz-share">
-                                        <div class="socialShare">
-                                            <a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u={{ pageContext.secureHost }}{{ model.url}}"><i style="color: #7f7f7f; font-size: 2em;" class="icon social-facebook-circle"></i></a>
-                                            <a target="_blank" href="https://plus.google.com/share?url={{ pageContext.secureHost }}{{ model.url}}"><i style="color: #7f7f7f; font-size: 2em;" class="icon social-google-plus1-circle"></i></a>
-                                            <a target="_blank" href="https://pinterest.com/pin/create/button/?url={{ pageContext.secureHost }}{{ model.url}}&media={% if model.content.productImages.length > 0 %}{{ model.content.productImages|first|prop('imageUrl') }}{% endif %}"><i style="color: #7f7f7f; font-size: 2em;" class="icon social-pinterest-circle"></i></a>
-                                            <a target="_blank" href="https://twitter.com/home?status={{ pageContext.secureHost }}{{ model.url}}"><i style="color: #7f7f7f; font-size: 2em;" class="icon social-twitter-circle"></i></a>
-                                        </div>
-                                    </div>
-
                                 </div>
                             </section>
 
@@ -155,15 +90,15 @@
                                     </dl>
                                 </div>
                             {% endif %}
-
                         </div>
                     </div>
                 </div>
             </div>
-
         </div>
-        <img src="{{model.sizeChartImagePath}}"/>
     </div>
 </div>
+
+<div id="SelectValidOption" style="display:none; cursor: default">
+    {{ labels.selectValidOption }}
+    <input type="button" class="btn button_secondary" id="mz-close-button" value="Close" />
 </div>
-{% include "modules/product/product-validation" %}
