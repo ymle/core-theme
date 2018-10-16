@@ -109,7 +109,6 @@ define(['modules/jquery-mozu', 'underscore', 'hyprlive', 'hyprlivecontext', 'mod
                             $('button.btnAddToCart').removeClass('is-disabled');
                             $('button.btnAddToCart').removeAttr("disabled");
                         } else {
-                            //$(".mz-qty-control").addClass("disabled");
                             $('button.btnAddToCart').addClass('is-disabled');
                             $('button.btnAddToCart').attr("disabled", "disabled");
                         }
