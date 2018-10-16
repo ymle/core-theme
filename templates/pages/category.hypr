@@ -12,7 +12,7 @@
     {% include "pages/category-interior" %}
 </div>
 
-<div class="quickViewSlider">
+<div class="quick-view-slider">
     {% block quickview-slider %}
         {% include "modules/product/product-quick-view" %}
     {% endblock quickview-slider %}

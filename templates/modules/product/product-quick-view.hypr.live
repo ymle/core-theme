@@ -1,4 +1,4 @@
-<div class="slider-container quickViewElement" id="quickview_{{ model.productCode }}">
+<div class="slider-container quick-view-element" id="quickview_{{ model.productCode }}">
     <div class="right-side-slider initial-state animated" >
         <div class="slider-screen">
             <div class="title-text">
@@ -8,7 +8,7 @@
                 </div>
             </div>
 
-            <div class="quickview-content">
+            <div class="quick-view-content">
                 <div itemscope itemtype="http://schema.org/Product" class="mz-l-container">
                     <div data-mz-productimages class="mz-productimages mz-l-sidebar">
                         {% if model.mainImage.imageUrl %}

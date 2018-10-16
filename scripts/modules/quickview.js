@@ -48,8 +48,8 @@ define(['modules/jquery-mozu', 'underscore', 'hyprlive', 'hyprlivecontext', 'mod
 
         onOptionChange: function(e) {
             if (window.quickviewProduct !== null) {
-                $(".quickViewElement").addClass("is-loading");
-                $(".quickViewElement input, .quickViewElement select").attr("disabled", "disabled");
+                $(".quick-view-element").addClass("is-loading");
+                $(".quick-view-element input, .quick-view-element select").attr("disabled", "disabled");
                 return this.configure($(e.currentTarget));
             }
         },
@@ -122,8 +122,8 @@ define(['modules/jquery-mozu', 'underscore', 'hyprlive', 'hyprlivecontext', 'mod
                     $('button.btnAddToCart').attr("disabled", "disabled");
                 }
 
-                $(".quickViewElement").removeClass("is-loading");
-                $(".quickViewElement input, .quickViewElement select").removeAttr("disabled");
+                $(".quick-view-element").removeClass("is-loading");
+                $(".quick-view-element input, .quick-view-element select").removeAttr("disabled");
             });
         },
 
@@ -148,12 +148,12 @@ define(['modules/jquery-mozu', 'underscore', 'hyprlive', 'hyprlivecontext', 'mod
             window.quickviewProduct = product;
             this.currentProductCode = qvProductCode;
 
-            $('.quickViewSlider .quickview-content').html('');
+            $('.quick-view-slider .quick-view-content').html('');
 
             product.apiGet().then(function() {
                 var modalTemplate = Hypr.getTemplate('modules/product/product-quick-view');
-                var modalDiv = $('.quickViewSlider');
-                var modalDivContent = $('.quickViewSlider .quickview-content');
+                var modalDiv = $('.quick-view-slider');
+                var modalDivContent = $('.quick-view-slider .quick-view-content');
 
                 var htmlToSetAsContent = modalTemplate.render({
                     model: product.toJSON({
@@ -163,10 +163,10 @@ define(['modules/jquery-mozu', 'underscore', 'hyprlive', 'hyprlivecontext', 'mod
 
                 window.prodOptions = window.quickviewProduct.attributes.options;
 
-                $('.quickViewSlider').html(htmlToSetAsContent);
+                $('.quick-view-slider').html(htmlToSetAsContent);
 
                 slider.init(this);
-                $('.quickViewSlider .right-side-slider').removeClass('slideOutRight').addClass('slideInRight').parent().css('position','fixed');
+                $('.quick-view-slider .right-side-slider').removeClass('slideOutRight').addClass('slideInRight').parent().css('position','fixed');
                 $('body').addClass('fix-body');
 
                 image_bx_slider = $('.bxslider_img').bxSlider({
@@ -188,11 +188,11 @@ define(['modules/jquery-mozu', 'underscore', 'hyprlive', 'hyprlivecontext', 'mod
                     // ADD LISTENERS AFTER OPENING QUICK VIEW POPUP
                     $(modalDiv).on('show', function(e) {
                         // REMOVE PREVIOUS EVENTS (IF ANY)
-                        $('.quickViewSlider').off('click', 'button.btnAddToCart');
-                        $(".quickViewElement").off('click');
+                        $('.quick-view-slider').off('click', 'button.btnAddToCart');
+                        $(".quick-view-element").off('click');
 
                         // ADD LISTENER FOR ADD TO CART
-                        $('.quickViewSlider').on('click', 'button.btnAddToCart', function() {
+                        $('.quick-view-slider').on('click', 'button.btnAddToCart', function() {
                             var newQty = 1;
                             var body = $("html") || $("body");
                             if(window.quickviewProduct.attributes.inventoryInfo.manageStock === true){
@@ -243,7 +243,7 @@ define(['modules/jquery-mozu', 'underscore', 'hyprlive', 'hyprlivecontext', 'mod
                         });
 
                         // ADD LISTENER FOR CLICK OUTSIDE OF QUICKVIEW
-                        $(".quickViewElement").on("click", function(e){
+                        $(".quick-view-element").on("click", function(e){
                             if(e.target == this){
                                 slider.closeQuickViewSlider();
                             }
